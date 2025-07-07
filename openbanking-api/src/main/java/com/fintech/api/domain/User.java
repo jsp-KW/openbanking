@@ -35,16 +35,16 @@ public class User {
     @Id  //이 엔티티의 PK 기본키를 나타내기 위해-> DB에서 PRIMARY KEY 로 인식
     @GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO_INCREMENT와, IDENTITY 전략은  1:1 대응
     
-    private Long id;
-    private String name;
+    private Long id; //고유 id
+    private String name; // 이름
 
     @Column(unique = true)
-    private String email;
+    private String email; // 이메일
 
-    private String password;
+    private String password; // 비밀번호
     
     @Column(unique = true)
-    private String phone;
+    private String phone; // 전화번호
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference

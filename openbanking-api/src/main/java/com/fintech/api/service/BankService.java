@@ -19,7 +19,7 @@ public class BankService {
         return bankRepository.findAll();
     }
 
-    public Optional<Bank> getBankById(Long id) {
+    public Optional<Bank> getBankById(Long id) { // Optional -> 있을수도 없을 수도
         return bankRepository.findById(id);
     }
 
@@ -31,7 +31,7 @@ public class BankService {
         bankRepository.deleteById(id);
     }
 
-    public Optional<Bank> getBankByName (String bankName) {
+    public Optional<Bank> getBankByName (String bankName) { //Optional
         return bankRepository.findByBankName(bankName);
     }
 }

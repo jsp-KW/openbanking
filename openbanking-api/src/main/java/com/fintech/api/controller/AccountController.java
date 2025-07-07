@@ -7,8 +7,13 @@ import com.fintech.api.domain.Account;
 import com.fintech.api.service.AccountService;
 
 import lombok.RequiredArgsConstructor;
+import com.fintech.api.dto.AccountDto;
 
 import java.util.List;
+// Todo
+// DTO 적용전의 엔티티 직접 반환 방식 
+// DTO 설계로 무한 순환 참조 가능성 방지 및 프론트엔드단에서 과하게 많은 정보 받는것 방지
+// 출력 포맷 커스터마이징 어려움 방지
 
 @RestController
 @RequestMapping("/accounts")
@@ -19,24 +24,24 @@ public class AccountController {
 
     // 해당 사용자의 계좌를 생성
     @PostMapping("/users/{userId}") 
-    public ResponseEntity <Account> createAccount (@RequestBody Account account, @PathVariable Long userId) {
+    public ResponseEntity <AccountDto> createAccount (@RequestBody Account account, @PathVariable Long userId) {
         Account created_account = accountService.createAccount(account, userId);
-        return ResponseEntity.ok(created_account);
+        return ResponseEntity.ok(AccountDto.from(created_account));
     }
 
     // 사용자별로 계좌 목록을 조회
     @GetMapping("/users/{userId}")
-    public ResponseEntity<List<Account>> getUserAccounts (@PathVariable Long userId) {
-        return ResponseEntity.ok(accountService.getAccountsByUserId(userId));
+    public ResponseEntity<List<AccountDto>> getUserAccounts (@PathVariable Long userId) {
+        List<Account> accounts = accountService.getAccountsByUserId(userId);
+        List<AccountDto> dtos = accounts.stream().map(AccountDto::from).toList();
+        return ResponseEntity.ok(dtos);
     }
 
     // 특정 계좌 조회
     @GetMapping ("/{accountId}")
-    public ResponseEntity<Account> getAccount (@PathVariable Long accountId) {
-        return accountService.getAccountById(accountId).map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<AccountDto> getAccount (@PathVariable Long accountId) {
+        return accountService.getAccountById(accountId).map(AccountDto::from).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
-
 
     // 계좌 삭제!
     @DeleteMapping("/{accountId}") 

@@ -16,35 +16,36 @@ import com.fintech.api.domain.Bank;
 import com.fintech.api.service.BankService;
 
 import lombok.RequiredArgsConstructor;
-
+import com.fintech.api.dto.BankDto;
 @RestController
 @RequestMapping("/banks")
 @RequiredArgsConstructor
 public class BankController {
-    private final BankService bankService;
+    private final BankService bankService; // 컨트롤러는 실제로 db 조회x 서비스를 통해
 
     // 모든 은행 목록 가져오기
     @GetMapping
-    public ResponseEntity <List<Bank>> getAllBanks() {
-        return ResponseEntity.ok(bankService.getAllBanks());
+    public ResponseEntity <List<BankDto>> getAllBanks() {
+        List<Bank> banks = bankService.getAllBanks();
+        List<BankDto> dtos = banks.stream().map(BankDto::from).toList();
+        return ResponseEntity.ok(dtos);
 
     } 
 
     // 특정 은행 조회하기
     @GetMapping ("/{id}")
-    public ResponseEntity<Bank> getBankId(@PathVariable Long id) {
-        return bankService.getBankById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-
+    public ResponseEntity<BankDto> getBankId(@PathVariable Long id) {
+        return bankService.getBankById(id).map(BankDto::from).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     // 추가로 이름으로 은행 조회
     @GetMapping("/search")
-    public ResponseEntity<Bank> getBankByNmae(@RequestParam String name) {
-        return bankService.getBankByName(name).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-
+    public ResponseEntity<BankDto> getBankByNmae(@RequestParam String name) {
+          return bankService.getBankByName(name).map(BankDto::from).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+   
     }
 
-    // 새 은행 등록
+    // 새 은행 등록 -> 바꿀지 말지
     @PostMapping
     public ResponseEntity<Bank> createBank(@RequestBody Bank bank) {
         return ResponseEntity.ok(bankService.createBank(bank));

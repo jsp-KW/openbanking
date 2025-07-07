@@ -20,7 +20,7 @@ public class Transaction {
     private Long id;
 
     private Long amount; // 거래 금액
-    private String type; // 거래 종류 
+    private String type; // 거래 종류 -> 입금인지 출금인지
     private String description; // 거래 내역 설명
 
 
