@@ -26,4 +26,5 @@ import com.fintech.api.domain.Account;
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     List<Account> findByUserId(Long userId);
+   // List<Account> findByEmail(String email);
 }

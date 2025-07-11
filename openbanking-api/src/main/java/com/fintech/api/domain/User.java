@@ -46,6 +46,8 @@ public class User {
     @Column(unique = true)
     private String phone; // 전화번호
 
+    private String role;
+    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List <Account> accounts = new ArrayList<>();

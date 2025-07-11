@@ -3,6 +3,9 @@ package com.fintech.api.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,11 +49,14 @@ public class BankController {
     }
 
     // 새 은행 등록 -> 바꿀지 말지
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<Bank> createBank(@RequestBody Bank bank) {
+       
         return ResponseEntity.ok(bankService.createBank(bank));
     }
     // 특정 은행 삭제
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBank(@PathVariable Long id) {
         bankService.deleteBank(id);

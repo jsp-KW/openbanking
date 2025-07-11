@@ -3,6 +3,7 @@ package com.fintech.api.service;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.fintech.api.domain.Account;
@@ -41,15 +42,17 @@ public class AccountService {
     // null-safe 
     @Transactional  // db 쓰기 작업 -> 트랜잭션 보장 명시 
     // 계좌 생성 (사용자와 연결)
-    public Account createAccount (Account account, Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(()->
+    public Account createAccount (Account account, String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(()->
         new IllegalArgumentException("사용자를 찾을 수 없습니다."));
         account.setUser(user);
         return accountRepository.save(account);
     }
     // 특정 사용자의 모든 계좌 리스트 조회 함수
-    public List<Account> getAccountsByUserId (Long userId) {
-        return accountRepository.findByUserId(userId);
+    public List<Account> getAccountsByEmail (String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(()-> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        
+        return accountRepository.findByUserId(user.getId());
         
     }
     // 특정 계좌 조회
@@ -60,4 +63,15 @@ public class AccountService {
     public void deleteAccount (Long id) {
         accountRepository.deleteById(id);
     }
+
+
+    public void deleteAccountWithAuth(Long accountId, String email) {
+    Account account = accountRepository.findById(accountId)
+        .orElseThrow(() -> new IllegalArgumentException("계좌 없음"));
+    if (!account.getUser().getEmail().equals(email)) {
+        throw new AccessDeniedException("본인 계좌만 삭제 가능");
+    }
+    accountRepository.delete(account);
+}
+
 }
