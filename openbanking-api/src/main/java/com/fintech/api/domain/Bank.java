@@ -35,9 +35,8 @@ public class Bank {
     private String bankName;
     private String website_url;
 
-    @OneToMany(mappedBy = "bank", cascade = CascadeType.ALL)
-  
-    @JsonBackReference
+    @OneToMany(mappedBy = "bank")
+    @JsonBackReference("bank-account")
     private List<Account> accounts = new ArrayList<>();
 
 }

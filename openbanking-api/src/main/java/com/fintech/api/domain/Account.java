@@ -47,15 +47,17 @@ public class Account {
     // 사용자와 계좌 -> 1:N  일대다 관계 
     // 계좌 입장에서 다대일 관계이므로
     private Long balance;
-    @ManyToOne(fetch = FetchType.LAZY) // 지연로딩<-> 즉시로딩(EAGER)
-    @JoinColumn(name = "user_id", referencedColumnName = "id") // TABLE 외래키 컬럼 지정
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonBackReference("user-account")  
     private User user; // JPA 가 user_id fk 생성 + 객체 연관 매핑
 
 
     // 계좌와 은행  -> N:1관계
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name= "bank_id")
-    @JsonBackReference
+  
+    @ManyToOne
+    @JoinColumn(name = "bank_id")
+    @JsonBackReference("bank-account")
     private Bank bank;
 
     // 거래내역과 계좌의 관계

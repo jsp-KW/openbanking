@@ -13,9 +13,10 @@ public class AccountDto {
     private Long id;
     private String accountNumber;
     private String bankName;
+    private Long balance;
 
     // 은행이름 -> getBank().getBankName() 으로 접근!!!
     public static AccountDto from (Account account) {
-        return new AccountDto(account.getId(), account.getAccountNumber(), account.getBank().getBankName());
+        return new AccountDto(account.getId(), account.getAccountNumber(), account.getBank().getBankName(), account.getBalance());
     }
 }

@@ -19,12 +19,16 @@
 package com.fintech.api.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import com.fintech.api.domain.Account;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     List<Account> findByUserId(Long userId);
    // List<Account> findByEmail(String email);
+   Optional<Account> findByAccountNumber(String accountNumber);
+
 }

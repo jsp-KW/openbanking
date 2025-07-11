@@ -16,6 +16,7 @@ import com.fintech.api.domain.Transaction;
 import com.fintech.api.dto.TransactionWithAccountDto;
 import com.fintech.api.service.TransactionService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 
 
@@ -27,6 +28,7 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     // 거래내역 생성 
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<TransactionWithAccountDto> createTransaction (
         @AuthenticationPrincipal UserDetails userDetails, // 현재 로그인하고 있는 사용자 정보

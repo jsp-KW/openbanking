@@ -38,3 +38,8 @@ out/
 
 application.properties
 application.yml
+
+*.yml
+*.yaml
+*.json
+

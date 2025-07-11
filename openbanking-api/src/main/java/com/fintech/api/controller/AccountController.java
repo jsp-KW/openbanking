@@ -12,8 +12,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.fintech.api.domain.Account;
 import com.fintech.api.service.AccountService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.fintech.api.dto.AccountDto;
+import com.fintech.api.dto.AccountRequestDto;
+import com.fintech.api.dto.MessageResponse;
+import com.fintech.api.dto.TransferRequestDto;
 
 import java.util.List;
 
@@ -26,25 +31,16 @@ public class AccountController {
     private final AccountService accountService;
 
     // 해당 사용자의 계좌를 생성
-    // @PostMapping("/users/{userId}") 
-    // public ResponseEntity <AccountDto> createAccount (@RequestBody Account account, @PathVariable Long userId) {
-    //     Account created_account = accountService.createAccount(account, userId);
-    //     return ResponseEntity.ok(AccountDto.from(created_account));
-    // }
-
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("")
-    public ResponseEntity<AccountDto> createAccount(@RequestBody Account account, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<AccountDto> createAccount(@Valid @RequestBody AccountRequestDto accountDto, @AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails.getUsername();
-        Account created = accountService.createAccount(account,email);
+        Account created = accountService.createAccount(accountDto,email);
         return ResponseEntity.ok(AccountDto.from(created));
     }
-    // public String postMethodName(@RequestBody String entity) {
-    //     //TODO: process POST request
-        
-    //     return entity;
-    // }
-    
+ 
     // 사용자별로 계좌 목록을 조회
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/my")
     public ResponseEntity<List<AccountDto>> getUserAccounts (@AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails.getUsername();
@@ -53,15 +49,31 @@ public class AccountController {
         return ResponseEntity.ok(dtos);
     }
 
-    // 특정 계좌 조회
-    @GetMapping ("/{accountId}")
-    public ResponseEntity<AccountDto> getAccount (@PathVariable Long accountId) {
-        return accountService.getAccountById(accountId).map(AccountDto::from).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    // 특정 계좌 조회 ( 사용자거나, 관리자인 경우) by 계좌 id로 
+    // frontend에서 ui 드롭박스로 선택하면 백엔드에 id가 넘어오기 때문임
+
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{accountId}")
+    public ResponseEntity<AccountDto> getAccount(
+        @PathVariable Long accountId,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return accountService.getAccountById(accountId)
+            .filter(account ->
+                account.getUser().getEmail().equals(userDetails.getUsername()) ||
+                userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+            )
+            .map(AccountDto::from)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.status(403).build());
     }
+
 
     // 계좌 삭제!
     
-    @DeleteMapping("/{accountId}") 
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{accountId}")
     public ResponseEntity<Void> deleteAccount(
         @PathVariable Long accountId,
         @AuthenticationPrincipal UserDetails userDetails
@@ -71,4 +83,43 @@ public class AccountController {
         return ResponseEntity.noContent().build();
     }
 
+
+    // 계좌번호로 조회하기
+    // 사용자 or 관리자 가능으로 로직 설계
+    //GET /accounts/number/{accountNumber}
+    
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/number/{accountNumber}")
+    public ResponseEntity<AccountDto> getAccountByNumber(
+        @PathVariable String accountNumber,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return accountService.getAccountByNumber(accountNumber)
+            .filter(account ->
+                account.getUser().getEmail().equals(userDetails.getUsername()) || userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+            ) .map(AccountDto::from) .map(ResponseEntity::ok) .orElse(ResponseEntity.status(403).build());
+    }
+
+
+    // 오픈 뱅킹 핵심 api
+    // 입출금 이체 기능!!!
+    // POST 방식 /accounts/transfer
+    // 권한 인증 방식 Bearer {token}
+    // fromAccountId 하고 toAccountId로?
+
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/transfer")
+    public ResponseEntity<MessageResponse> transfer(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @RequestBody TransferRequestDto requestDto
+    ) {
+        accountService.transfer(
+            userDetails.getUsername(),
+            requestDto.getFromAccountNumber(),
+            requestDto.getToAccountNumber(),
+            requestDto.getAmount()
+        );
+        return ResponseEntity.ok(new MessageResponse("이체 완료"));
+    }
 }

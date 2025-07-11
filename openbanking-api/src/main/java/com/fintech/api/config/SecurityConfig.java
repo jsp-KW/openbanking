@@ -48,6 +48,7 @@ public class SecurityConfig {
     "/swagger-resources/**",          // Swagger 리소스
     "/webjars/**"                      // Swagger 정적 리소스
 ).permitAll()
+            .requestMatchers(HttpMethod.POST, "/users").permitAll()
             .requestMatchers(HttpMethod.POST, "/banks").hasRole("ADMIN")
             .requestMatchers(HttpMethod.DELETE, "/banks/**").hasRole("ADMIN")
             .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")

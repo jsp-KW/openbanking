@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.fintech.api.domain.User;
 import com.fintech.api.service.UserService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import com.fintech.api.dto.UserWithAccountsDto;
 import com.fintech.api.dto.UserDto;
@@ -23,6 +24,7 @@ public class UserController {
     
     private final UserService userService;
     // 모든 사용자를 조회 -> UserDto 리스트로 response
+    @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     
@@ -31,8 +33,9 @@ public class UserController {
         List<UserDto> dtos = users.stream().map(UserDto::from).toList();
         return ResponseEntity.ok(dtos);
     }
-    // 단일 사용자 id로 조회 -> UserWithAccountsDto 로 response
     
+    // 단일 사용자 id로 조회 -> UserWithAccountsDto 로 response
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{id}")
     public ResponseEntity<UserWithAccountsDto> getUserById(@PathVariable Long id,
         @AuthenticationPrincipal UserDetails userDetails
@@ -52,7 +55,7 @@ public class UserController {
         return ResponseEntity.ok(UserDto.from(created));
     }
 
-
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser (@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails)  {
        User user = userService.getUserById(id).orElseThrow(()-> new IllegalArgumentException("사용자 존재하지 않습니다."));
