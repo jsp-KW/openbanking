@@ -1,16 +1,7 @@
 import { useState } from "react";
 import axios from "../api/axiosInstance";
-import '../assets/login.css';
-import { useNavigate } from "react-router-dom";
-
-
-//프론트 : 이메일 +비밀번호 입력
-//백엔드에 POST API 방식 /api/auth/login 으로 전송
-
-// 백엔드 : 해당 email이 db에 존재하는지 확인
-// 비밀번호가 맞는경우 -> JWT 토큰 발급
-// 프론트에 토큰 반환
-
+import { useNavigate, Link } from "react-router-dom";
+import { AiOutlineLock, AiOutlineUser } from "react-icons/ai";
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -19,17 +10,10 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('로그인 시도:', email, password);
 
     try {
-      const response = await axios.post('/auth/login', {
-        email,
-        password,
-      });
-
+      const response = await axios.post('/auth/login', { email, password });
       const { token } = response.data;
-      console.log('받은 토큰:', token);
-
       localStorage.setItem('jwtToken', token);
       navigate('/dashboard');
     } catch (error) {
@@ -39,26 +23,53 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-lg w-80">
+    <div className="min-h-screen bg-yellow-100 flex items-center justify-center">
+      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">로그인</h2>
 
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="form-input"
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="form-input"
-        />
+        <div className="mb-4">
+          <label className="block mb-1 text-sm font-medium text-gray-700">이메일</label>
+          <div className="relative">
+            <AiOutlineUser className="absolute left-3 top-2.5 text-gray-400" />
+            <input
+              type="email"
+              placeholder="example@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+              required
+            />
+          </div>
+        </div>
 
-        <button type="submit" className="btn-primary">로그인</button>
+        <div className="mb-6">
+          <label className="block mb-1 text-sm font-medium text-gray-700">비밀번호</label>
+          <div className="relative">
+            <AiOutlineLock className="absolute left-3 top-2.5 text-gray-400" />
+            <input
+              type="password"
+              placeholder="비밀번호"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+              required
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-yellow-400 text-black font-semibold py-2 rounded-md hover:bg-yellow-300 transition"
+        >
+          로그인
+        </button>
+
+        <p className="mt-4 text-sm text-center text-gray-600">
+          계정이 없으신가요?{' '}
+          <Link to="/signup" className="text-yellow-600 font-semibold hover:underline">
+            회원가입
+          </Link>
+        </p>
       </form>
     </div>
   );
