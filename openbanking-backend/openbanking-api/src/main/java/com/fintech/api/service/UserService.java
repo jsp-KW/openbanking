@@ -34,5 +34,12 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
+
+    public boolean isEmailExists(String email) {
+        // TODO Auto-generated method stub
+        return userRepository.existsByEmail(email);    
     
+    }
+    
+    // 회원가입대한 부분 서비스 로직 TODO
 }

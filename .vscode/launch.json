@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-OpenbankingApiApplication<openbanking-api_>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.fintech.api.OpenbankingApiApplication",
+            "projectName": "openbanking-api_",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
