@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -23,11 +23,11 @@ public class AuthController {
 
         // 1. 사용자 인증 시도
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
         String role = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
-        String token = jwtUtil.createToken(request.getUsername(),role);
+        String token = jwtUtil.createToken(request.getEmail(),role);
 
         // 3. 토큰 응답
         return ResponseEntity.ok(new LoginResponse(token));

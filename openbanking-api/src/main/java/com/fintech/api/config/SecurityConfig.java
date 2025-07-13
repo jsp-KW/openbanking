@@ -1,5 +1,7 @@
 package com.fintech.api.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,6 +16,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,13 +39,14 @@ public class SecurityConfig {
         // /auth/** -> 로그인 회원가입과 같은 url 누구나 접근 가능
         // 나머지는 인증이 필요
 
-
+ 
     http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
              .requestMatchers("/", "/hello").permitAll() 
-            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers(
     "/", "/hello",                      // 루트 테스트용
     "/swagger-ui/**",                  // Swagger UI HTML 파일
@@ -48,11 +54,11 @@ public class SecurityConfig {
     "/swagger-resources/**",          // Swagger 리소스
     "/webjars/**"                      // Swagger 정적 리소스
 ).permitAll()
-            .requestMatchers(HttpMethod.POST, "/users").permitAll()
-            .requestMatchers(HttpMethod.POST, "/banks").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/banks/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/banks").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/banks/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
             .anyRequest().authenticated()
         )
         .addFilterBefore(JwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -62,6 +68,19 @@ public class SecurityConfig {
     // 패스워드 인코더 등록
     // 비밀번호 암호화를 위하여
 
+    //react frontend 단 cors 에러 해결을 위해   
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:5173")); // React 주소 허용을 위해서
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true); // JWT 
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

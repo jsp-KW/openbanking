@@ -21,7 +21,7 @@ import com.fintech.api.service.BankService;
 import lombok.RequiredArgsConstructor;
 import com.fintech.api.dto.BankDto;
 @RestController
-@RequestMapping("/banks")
+@RequestMapping("/api/banks")
 @RequiredArgsConstructor
 public class BankController {
     private final BankService bankService; // 컨트롤러는 실제로 db 조회x 서비스를 통해

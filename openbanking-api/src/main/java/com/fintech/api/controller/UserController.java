@@ -18,7 +18,7 @@ import com.fintech.api.dto.UserWithAccountsDto;
 import com.fintech.api.dto.UserDto;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
     
