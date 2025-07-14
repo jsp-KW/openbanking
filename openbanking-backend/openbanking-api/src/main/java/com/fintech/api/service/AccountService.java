@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.Bank;
+import com.fintech.api.domain.NotificationType;
 import com.fintech.api.domain.Transaction;
 import com.fintech.api.domain.User;
 import com.fintech.api.dto.AccountRequestDto;
+import com.fintech.api.dto.CreateNotificationRequestDto;
 import com.fintech.api.repository.AccountRepository;
 import com.fintech.api.repository.BankRepository;
 import com.fintech.api.repository.TransactionRepository;
@@ -33,6 +35,22 @@ public class AccountService {
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
     private final TransactionRepository transactionRepository;
+    private final NotificationService notificationService;
+
+    // 계좌 번호 생성 로직!!
+    private String makeAccountNumber() {
+        String accountNumber;
+
+        do {
+            long raw = (long)(Math.random() * 1_0000_0000_0000L + 1000_0000_0000L); // 12자리
+            String rawString = String.valueOf(raw);
+            accountNumber = rawString.substring(0, 4) + "-" +
+                            rawString.substring(4, 8) + "-" +
+                            rawString.substring(8); // "1234-5678-9012"
+        } while (accountRepository.findByAccountNumber(accountNumber).isPresent());
+
+        return accountNumber;
+    }
 
     // findById () JPA 기본 메서드
     // User 엔티티의 ID를 가져오는 함수
@@ -61,10 +79,20 @@ public class AccountService {
     Account account = new Account();
     account.setUser(user);
     account.setBank(bank);
-    account.setAccountNumber(dto.getAccountNumber());
+    account.setAccountNumber(makeAccountNumber());
     account.setBalance(dto.getBalance());
 
-    return accountRepository.save(account);
+    Account saved = accountRepository.save(account);
+
+    notificationService.createNotification(
+      CreateNotificationRequestDto.builder().userId(user.getId())
+      .message("새로운 계좌를 개설하였습니다: " + saved.getAccountNumber()).type(NotificationType.ACCOUNT_CREATED).build()
+    
+    );
+
+    return saved;
+
+  
 }
     // 특정 사용자의 모든 계좌 리스트 조회 함수
     public List<Account> getAccountsByEmail (String email) {
@@ -82,15 +110,27 @@ public class AccountService {
         accountRepository.deleteById(id);
     }
 
-
+    // 계좌 삭제 & 인가된 사용자만
+    @Transactional
     public void deleteAccountWithAuth(Long accountId, String email) {
-    Account account = accountRepository.findById(accountId)
-        .orElseThrow(() -> new IllegalArgumentException("계좌 없음"));
-    if (!account.getUser().getEmail().equals(email)) {
-        throw new AccessDeniedException("본인 계좌만 삭제 가능");
+        Account account = accountRepository.findById(accountId)
+            .orElseThrow(() -> new IllegalArgumentException("계좌 없음"));
+        
+            if (!account.getUser().getEmail().equals(email)) {
+            throw new AccessDeniedException("본인 계좌만 삭제 가능");
+        }
+        
+        accountRepository.delete(account);
+
+        notificationService.createNotification(
+                CreateNotificationRequestDto.builder()
+                .userId(account.getUser().getId())
+                .message(account.getAccountNumber() + " 계좌가 삭제되었습니다.")
+                .type(NotificationType.SYSTEM_NOTICE)
+                .build()
+        );
+
     }
-    accountRepository.delete(account);
-}
   
     public Optional<Account> getAccountByNumber(String accountNumber) {
     return accountRepository.findByAccountNumber(accountNumber);
@@ -140,7 +180,12 @@ public class AccountService {
         transactionRepository.save(withdrawTx);
         transactionRepository.save(depositTx);
 
-  
+        // 알람 발송 로직 추가한 부분 
+
+        User user = from.getUser();
+        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(user.getId()).message(
+            amount+"원이" + toAccountNmuber + " 계좌로 이체 완료되었습니다."
+        ).type(NotificationType.TRANSFER).build());
 
 
     }

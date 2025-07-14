@@ -40,6 +40,9 @@ public class UserService {
         return userRepository.existsByEmail(email);    
     
     }
-    
-    // 회원가입대한 부분 서비스 로직 TODO
+
+    public Long getUserIdByEmail(String email) {
+            return userRepository.findByEmail(email).map(User::getId).orElseThrow(() -> new RuntimeException("해당 이메일의 사용자가 없습니다."));
+    }
+
 }
