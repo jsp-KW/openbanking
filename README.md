@@ -1,6 +1,6 @@
 # 💳 OpenBanking API
 
-Spring Boot 기반의 오픈뱅킹 시스템입니다.  
+Spring Boot 기반 웹 오픈뱅킹 시스템입니다.  
 실제 사용자 인증을 기반으로 계좌 개설, 조회, 이체, 거래내역 조회까지 가능한  
 RESTful API 서버를 구현하고 있습니다.
 
@@ -17,6 +17,11 @@ RESTful API 서버를 구현하고 있습니다.
 - 계좌 번호로 단건 조회
 - 본인 계좌 전체 목록 조회
 - 사용자 간 계좌 이체 기능 (트랜잭션 처리 포함)
+
+### 알림 (Notification)
+- 계좌 개설, 삭제, 이체 시 알림 자동 발송
+- 사용자 알림 목록 조회, 특정 알림 읽음 처리 기능 포함
+- 예정: 잔액 부족, 고액 거래, 월간 리포트, 예약 이체 성공/실패 알림 확장 예정
 
 ### 은행 (Bank)
 - 은행 코드 및 이름 정보 등록
@@ -77,6 +82,14 @@ RESTful API 서버를 구현하고 있습니다.
 | DELETE | /banks/{id}     | 은행 삭제                 |
 | GET    | /banks/search   | 은행 검색 (이름/코드 등)    |
 
+### NotificationController
+
+| Method | Endpoint | Description |
+|--------|------------------------------|-----------------------------------|
+| POST   | /api/notifications           | 알림 직접 생성 (관리자용) |
+| POST   | /api/notifications/read/{id} | 특정 알림 읽음 처리 |
+| GET    | /api/notifications/my        | 내 알림 목록 조회 |
+
 ### AuthController
 
 | Method | Endpoint     | Description     |
@@ -115,6 +128,7 @@ RESTful API 서버를 구현하고 있습니다.
 - Swagger 연동 완료
 
 ### 예정 기능
+- 잔액 부족시 알람, 고액 거래 감지시 알람, 예약 이체기능 구현 목표
 - 계좌 비밀번호 검증 로직 추가
 - 거래내역 필터링 (기간/타입별 조회)
 - 관리자/운영자 역할 기반 권한 제어
