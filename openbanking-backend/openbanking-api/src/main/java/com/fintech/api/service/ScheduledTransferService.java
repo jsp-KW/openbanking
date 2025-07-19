@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.NotificationType;
 import com.fintech.api.domain.ScheduledTransfer;
+import com.fintech.api.domain.Transaction;
 import com.fintech.api.domain.User;
 import com.fintech.api.dto.CreateNotificationRequestDto;
 import com.fintech.api.dto.CreateScheduledTransferRequestDto;
@@ -16,14 +17,16 @@ import com.fintech.api.dto.ScheduledTransferListResponseDto;
 import com.fintech.api.dto.ScheduledTransferResponseDto;
 import com.fintech.api.repository.AccountRepository;
 import com.fintech.api.repository.ScheduledTransferRepository;
-
+import com.fintech.api.repository.TransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ScheduledTransferService {
-  private final ScheduledTransferRepository scheduledTransferRepository;
+
+    private final TransactionRepository transactionRepository;
+    private final ScheduledTransferRepository scheduledTransferRepository;
     private final AccountRepository accountRepository;
     private final NotificationService notificationService;
 
@@ -93,6 +96,17 @@ public class ScheduledTransferService {
 
         from.setBalance(from.getBalance() - amount);
         to.setBalance(to.getBalance() + amount);
+
+        // 예약이체 성공시 트랜잭션 기록 남기기 위해 추가하기!!
+
+        transactionRepository.save(Transaction.builder().account(from).amount(-amount).type("출금")
+        .description("예약이체 출금: " + to.getAccountNumber()).balanceAfter(from.getBalance()).build()
+        );
+
+        
+        transactionRepository.save(Transaction.builder().account(to).amount(amount).type("입금")
+        .description("예약이체 입금: " +from.getAccountNumber()).balanceAfter(to.getBalance()).build()
+        );
     }
 
       /*
