@@ -127,7 +127,7 @@ RESTful API 서버를 구현하고 있습니다.
 | GET    | /        | 서버 기본 응답 확인  |
 
 ---
-<img width="862" height="586" alt="image" src="https://github.com/user-attachments/assets/70cf734e-23c6-4aeb-bf96-02ea6ae11749" />
+<img width="1233" height="734" alt="image" src="https://github.com/user-attachments/assets/7b1d4029-9bf0-46a2-98c4-cbbc4c4cf236" />
 
 
 ## 📈 개발 현황 및 계획
