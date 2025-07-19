@@ -32,6 +32,12 @@ RESTful API 서버를 구현하고 있습니다.
 - 계좌별 거래내역 전체 조회
 - 거래 ID로 단일 거래 조회
 
+### 예약이체 (Scheduled Transfer) 
+- 예약 이체 등록 (예약 시각 지정)
+- 내 예약이체 목록 조회
+- 예약이체 성공/실패 시 알림 자동 발송
+- 배치 기반 1분 주기 예약이체 자동 실행
+
 ---
 
 ## 🔐 인증 및 보안
@@ -82,6 +88,13 @@ RESTful API 서버를 구현하고 있습니다.
 | DELETE | /banks/{id}     | 은행 삭제                 |
 | GET    | /banks/search   | 은행 검색 (이름/코드 등)    |
 
+### ScheduledTransferController
+
+| Method | Endpoint                          | Description                      |
+|--------|-----------------------------------|----------------------------------|
+| POST   | /api/scheduled-transfers          | 예약이체 등록 (예약 시각 지정)    |
+| GET    | /api/scheduled-transfers/my       | 내 예약이체 목록 조회              |
+
 ### NotificationController
 
 | Method | Endpoint | Description |
@@ -125,11 +138,12 @@ RESTful API 서버를 구현하고 있습니다.
 - 계좌 생성, 삭제, 단건 및 전체 조회
 - 사용자 간 이체 기능 (출금/입금 트랜잭션 자동 기록)
 - 거래내역 단건 및 전체 조회
-- Swagger 연동 완료
+- 예약이체 기능(배치 기반 1분 주기 예약 이체 실행 처리)
+- 예약이체 목록 조회 api
+- Swagger, React 프론트 연동 완료
 
 ### 예정 기능
-- 잔액 부족시 알람, 고액 거래 감지시 알람, 예약 이체기능 구현 목표
 - 계좌 비밀번호 검증 로직 추가
 - 거래내역 필터링 (기간/타입별 조회)
 - 관리자/운영자 역할 기반 권한 제어
-- React 기반 프론트엔드 연동
+- 예약 이체 취소 API, 예약 이체 실패시 자동 재시도 처리, kafka 기반 처리 도입
