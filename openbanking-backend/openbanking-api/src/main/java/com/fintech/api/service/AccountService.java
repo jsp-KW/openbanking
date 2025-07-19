@@ -153,8 +153,12 @@ public class AccountService {
         }
 
 
-        if (from.getBalance() < amount) {
-            throw new IllegalArgumentException("잔액이 부족합니다.");
+        if (from.getBalance() < amount) { // 현재 잔액이 부족한 경우
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()
+            ).message("잔액이 부족하여 이체가 실패하였습니다.").type(NotificationType.INSUFFICIENT_BALANCE).build()
+            );
+
+            throw new IllegalArgumentException("잔액이 부족하여 이체가 실패하였습니다.");
         }
 
 
@@ -177,16 +181,33 @@ public class AccountService {
             .description(from.getAccountNumber() + "에서 입금됨")
             .build();
 
+
+        Long high_value_threshold =  1_000_000L; // 고액 임계값 변수 
+
         transactionRepository.save(withdrawTx);
         transactionRepository.save(depositTx);
 
-        // 알람 발송 로직 추가한 부분 
+        // 이체자 알람
 
-        User user = from.getUser();
-        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(user.getId()).message(
-            amount+"원이" + toAccountNmuber + " 계좌로 이체 완료되었습니다."
-        ).type(NotificationType.TRANSFER).build());
+        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId())
+            .message(amount+ "원이 "  + toAccountNmuber + " 계좌로 이체 완료되었습니다.")
+            .type (NotificationType.TRANSFER).build()
+        
+        );
+        // 입금자 알람
+        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId())
+            .message(from.getAccountNumber() + " 계좌에서 "  + amount + "원이 입금되었습니다.")
+            .type (NotificationType.TRANSFER).build()
+        
+        );
 
+        // 고액 기준이 넘는 돈을 이체하는 경우
+        // 이체하는 사람에게 알람
+        if (amount >= high_value_threshold) {
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 이체되었습니다.")
+            .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+            );
+        }
 
     }
 

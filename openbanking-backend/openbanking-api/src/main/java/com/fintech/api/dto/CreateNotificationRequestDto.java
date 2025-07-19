@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// 알람관련 처리 dto
 
 public class CreateNotificationRequestDto {
     
