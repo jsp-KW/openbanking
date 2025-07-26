@@ -4,7 +4,7 @@ import com.fintech.api.domain.User;
 import com.fintech.api.dto.LoginRequest;
 import com.fintech.api.dto.LoginResponse;
 import com.fintech.api.dto.SignupRequest;
-import com.fintech.api.jwt.JwtUtil;
+import com.fintech.api.jwt.JwtTokenProvider;
 import com.fintech.api.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +20,7 @@ public class AuthController {
 
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtUtil;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
