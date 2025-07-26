@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.fintech.api.jwt.JwtTokenProvider;
 import com.fintech.api.service.CustomUserDetailsService;
 
 import jakarta.servlet.FilterChain;

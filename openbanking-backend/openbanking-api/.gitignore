@@ -43,3 +43,6 @@ application.yml
 *.yaml
 *.json
 
+# 개인키/공개키 PEM 파일
+src/main/resources/keys/*.pem
+

@@ -1,11 +1,12 @@
 package com.fintech.api.controller;
 
+import com.fintech.api.config.JwtTokenProvider;
 import com.fintech.api.domain.User; 
 import com.fintech.api.dto.LoginRequest;
 import com.fintech.api.dto.LoginResponse;
 import com.fintech.api.dto.SignupRequest;
-import com.fintech.api.jwt.JwtTokenProvider;
 import com.fintech.api.service.UserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;

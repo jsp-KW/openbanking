@@ -41,10 +41,10 @@ public class SecurityConfig {
 
  
     http
-        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
+        .cors(cors -> cors.configurationSource(corsConfigurationSource())) //cors 허용 설정
+        .csrf(AbstractHttpConfigurer::disable) // csrf 보안 비활성화 
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))// 세션 저장 x
+        .authorizeHttpRequests(auth -> auth // 경로별 접근 권한 설정
              .requestMatchers("/", "/hello").permitAll() 
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers(
@@ -54,15 +54,17 @@ public class SecurityConfig {
     "/swagger-resources/**",          // Swagger 리소스
     "/webjars/**"                      // Swagger 정적 리소스
 ).permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-            .requestMatchers(HttpMethod.POST, "/api/banks").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // 회원가입은 누구나 가능
+            .requestMatchers(HttpMethod.POST, "/api/banks").hasRole("ADMIN") // 은행 등록 / 삭제는 관리자만 가능
             .requestMatchers(HttpMethod.DELETE, "/api/banks/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN") // 모든 사용자 정보 조회는 관리자만 가능
+            .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN") // 모든 사용자 정보 삭제는 관리자만 가능하게
             .anyRequest().authenticated()
         )
         .addFilterBefore(JwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+        // jwt 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입
+        //UsernamePasswordAuthenticationFilter는 spring  이 기본적으로 제공하는 로그인 처리 필터
+        // 이 필터앞에 JwtAuthenticationFilter를 삽입하여 컨트롤러 진입  전 사용자 인증 정보를 setting
        return http.build();
     }
     // 패스워드 인코더 등록
@@ -74,19 +76,24 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173")); // React 주소 허용을 위해서
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // JWT 
+        config.setAllowedHeaders(List.of("*"));// 모든 헤더 허용
+        config.setAllowCredentials(true); // Authorization 헤더 포함 허용
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", config); // 모든 경로에 적용
         return source;
     }
+
+    // 비밀번호 암호화용 Encoder 등록
+    // spring security -> 암호화된 비밀번호 요구함
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-
+    // 인증 매니저 등록
+    // spring security 의 인증 로직 담당
+    // AuthenticationManagerBuilder 를 자동ㅈ 구성
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
