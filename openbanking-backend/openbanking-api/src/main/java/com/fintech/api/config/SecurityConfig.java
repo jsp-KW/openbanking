@@ -46,6 +46,7 @@ public class SecurityConfig {
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))// 세션 저장 x
         .authorizeHttpRequests(auth -> auth // 경로별 접근 권한 설정
              .requestMatchers("/", "/hello").permitAll() 
+             .requestMatchers("/redis/**").permitAll()
             .requestMatchers("/api/auth/**").permitAll()
             .requestMatchers(
     "/", "/hello",                      // 루트 테스트용
