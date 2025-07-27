@@ -3,6 +3,8 @@ package com.fintech.api.config;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,8 +27,13 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtUtil;// jwt 토큰 클래스 (생성,검증,추출)
-    private final CustomUserDetailsService customUserDetailsService;// 필요한 경우 사용자 정보를 조회할때 사용하는 객체
+   // private final CustomUserDetailsService customUserDetailsService;// 필요한 경우 사용자 정보를 조회할때 사용하는 객체
 
+    // redisTemplate injection
+    private final RedisTemplate<String, String> redisTemplate;
+
+
+    
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
                                   HttpServletResponse response, 
@@ -56,6 +63,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 유효한 토큰이라면?
 
             if (jwtUtil.validateToken(token)) {
+
+                //redis blacklist 조회 확인추가!!!
+
+                String isBlackListed =  redisTemplate.opsForValue().get("blacklist:" +token);
+
+                if (isBlackListed !=null) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("해당 token은 로그아웃으로 처리된 토큰입니다.");
+                    return;
+                }
+
+
                 String email = jwtUtil.getUsername(token); 
                 String role = jwtUtil.getUserRole(token); // 사용자인지 관리자인지 역할을 추출!! ROLE_USER/ ROLE_ADMIN
 

@@ -13,6 +13,7 @@ import java.util.Date;
 
 import org.springframework.stereotype.Component;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -54,12 +55,12 @@ public class JwtTokenProvider {
    
     // jwt token 발급-> 서버
     // 서버의 개인키 privateKey로 서명하고, RS256 서명알고리즘 사용
-    // 만료시간 1시간짜리
+    // 만료시간 1시간짜리->30분으로 대체
     // TOKEN을 발급하는 함수 -? 사용자 이름 + 역할 (관리자인지 아닌지)
     public String createToken(String username, String role) {
         return Jwts.builder().setSubject(username)
         .claim("role", role)
-        .setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis()+ 3600000)) //1 시간
+        .setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis()+ 1800000)) //30분
         .signWith(privateKey, SignatureAlgorithm.RS256).compact();
     }
     
@@ -93,4 +94,23 @@ public class JwtTokenProvider {
         .getBody()
         .get("role", String.class);
 }
+    // redis 도입으로 인한 refreshToken 생성 함수
+    public String createRefreshToken(String email) {
+       
+        return Jwts.builder().setSubject(email).setIssuedAt(new Date())
+        .setExpiration(new Date(System.currentTimeMillis() + 604800000))// 7일동안 유효
+        .signWith(privateKey, SignatureAlgorithm.RS256).compact();    
+    
+    }
+
+    // 만료시간 30분자리 토큰이 있는데, 로그아웃을 5분만에 하면?
+    // 이 토큰은 25분동안 메모리 차지... -> 이 경우의 토큰을 블랙리스트로 !
+
+    public long getExpiration(String accessToken) {
+        Claims claims = Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(accessToken)
+        .getBody();
+    
+        Date expiration = claims.getExpiration(); // 토큰에 들어있는 만료시각을 추출해서 저장하고
+        return expiration.getTime()-System.currentTimeMillis(); // 만료시각 - 현재시각 : 얼마나 남았는지 check
+    }   //이 시간을 통해서 redis에 blacklist로 등록할 TTL 로 활용
 }

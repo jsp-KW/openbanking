@@ -6,6 +6,10 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LoginResponse {
-    private String token;
+    //private String token;
     // 다른 유저정보 같이 response 받고싶은 경우 필드 추가하면 됨.
+    
+    // redis 도입으로
+    private String accessToken;
+    private String refreshToken;
 }
