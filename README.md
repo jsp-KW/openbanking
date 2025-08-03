@@ -128,10 +128,11 @@ RESTful API 서버를 구현하고 있습니다.
 
 ---
 <img width="1233" height="734" alt="image" src="https://github.com/user-attachments/assets/7b1d4029-9bf0-46a2-98c4-cbbc4c4cf236" />
-
+---
 <img width="964" height="124" alt="image" src="https://github.com/user-attachments/assets/067d0457-66cb-4b16-98a3-a6a4f03fbe00" />
 redis CLI 로 조회한 사진
----
+
+
 ## 📈 개발 현황 및 계획
 
 ### 현재 구현 완료
