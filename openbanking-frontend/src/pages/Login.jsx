@@ -13,8 +13,13 @@ export default function Login() {
 
     try {
       const response = await axios.post('/auth/login', { email, password });
-      const { token } = response.data;
-      localStorage.setItem('jwtToken', token);
+      const {accessToken, refreshToken } = response.data;
+      if (!accessToken || typeof accessToken !== 'string') {
+        throw new Error('로그인 응답에 토큰 없음 또는 잘못됨');
+      }
+
+      localStorage.setItem('jwtToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       navigate('/dashboard');
     } catch (error) {
       console.error('로그인 실패:', error);
