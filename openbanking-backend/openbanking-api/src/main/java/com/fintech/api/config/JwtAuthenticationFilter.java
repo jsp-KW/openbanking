@@ -78,10 +78,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = jwtUtil.getUsername(token); 
                 String role = jwtUtil.getUserRole(token); // 사용자인지 관리자인지 역할을 추출!! ROLE_USER/ ROLE_ADMIN
 
+
+                //debugging
+
+                System.out.println("jwt 필터 실행됨");
+                System.out.println("사용자 이메일"+ email);
+                System.out.println("추출된 role" + role);
                 // SPRING SECURIY 에서 사용할 USERDETAILS 객체 생성 
                 // PASSWORD 는 비워두고
                 UserDetails userDetails = org.springframework.security.core.userdetails.User.withUsername(email).password("").authorities("ROLE_"+role).build();
 
+                
+                 System.out.println("  - 부여된 권한: " + userDetails.getAuthorities());
                 // 인증 객체 생성 및 SecurityContext에 등록
                 // 이후 controller에서 @AuthenticationPrincipal 이나 SecurityContextHolder로 사용자 정보에 대해 access가 가능
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails,null, userDetails.getAuthorities());

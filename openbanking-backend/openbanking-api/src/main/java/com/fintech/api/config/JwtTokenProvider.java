@@ -95,9 +95,11 @@ public class JwtTokenProvider {
         .get("role", String.class);
 }
     // redis 도입으로 인한 refreshToken 생성 함수
-    public String createRefreshToken(String email) {
+    public String createRefreshToken(String email, String role) {
        
-        return Jwts.builder().setSubject(email).setIssuedAt(new Date())
+        return Jwts.builder().setSubject(email).
+        claim("role",role)
+        .setIssuedAt(new Date())
         .setExpiration(new Date(System.currentTimeMillis() + 604800000))// 7일동안 유효
         .signWith(privateKey, SignatureAlgorithm.RS256).compact();    
     

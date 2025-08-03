@@ -41,7 +41,7 @@ public class AuthController {
 
         String role = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         String accesstoken = jwtUtil.createToken(request.getEmail(), role);
-        String refreshToken = jwtUtil.createRefreshToken(request.getEmail());
+        String refreshToken = jwtUtil.createRefreshToken(request.getEmail(), role);
 
         redisTemplate.opsForValue().set("refresh:" + request.getEmail(),
         
@@ -130,7 +130,7 @@ public class AuthController {
         // accessToken 을 블랙리스트 등록 TTL: 남은 유효시간
 
         long remain_time = jwtUtil.getExpiration(accessToken);
-        redisTemplate.opsForValue().set("blacklist: " + accessToken, "logout", Duration.ofMillis(remain_time));
+        redisTemplate.opsForValue().set("blacklist:" + accessToken, "logout", Duration.ofMillis(remain_time));
 
 
         return ResponseEntity.ok("logout 완료(accessToken 은 blacklist 처리)");

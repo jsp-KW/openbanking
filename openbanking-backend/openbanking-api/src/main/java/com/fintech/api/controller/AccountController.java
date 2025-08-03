@@ -43,7 +43,13 @@ public class AccountController {
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/my")
     public ResponseEntity<List<AccountDto>> getUserAccounts (@AuthenticationPrincipal UserDetails userDetails) {
+       
+        if (userDetails == null) {
+        System.out.println(" userDetails is null - 인증 정보 없음");
+        return ResponseEntity.status(403).build();
+    }
         String email = userDetails.getUsername();
+        System.out.println("인증된 사용자 이메일" +  email);
         List<Account> accounts = accountService.getAccountsByEmail(email);
         List<AccountDto> dtos = accounts.stream().map(AccountDto::from).toList();
         return ResponseEntity.ok(dtos);
