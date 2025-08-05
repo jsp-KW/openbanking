@@ -26,6 +26,7 @@ export default function CreateAccount() {
       await axios.post('/accounts', {
         bankId: parseInt(bankId),
         accountType,
+        balance : 0
       });
       alert('✅ 계좌가 성공적으로 개설되었습니다!');
       navigate('/dashboard');

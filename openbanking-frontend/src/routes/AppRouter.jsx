@@ -4,7 +4,8 @@ import Login from '../pages/Login';
 import Dashboard from '../pages/Dashboard';
 import CreateAccount from '../pages/CreateAccount';
 import Signup from '../pages/Signup';
-
+import Transfer from '../pages/Transfer';
+import Transactions from '../pages/Transactions';
 
 function AppRouter() {
   return (
@@ -16,7 +17,9 @@ function AppRouter() {
         <Route path="/dashboard" element={<Dashboard />} />
 
         <Route path="/create-account" element={<CreateAccount />} />
-        {/* <Route path="/transfer" element={<Transfer />} />
+        <Route path="/transfer" element={<Transfer />} />
+        {/*<Route path="/transactions" element={<Transactions />} />
+         <Route path="/transfer" element={<Transfer />} />
         <Route path="/scheduled-transfer" element={<ScheduledTransfer />} />
         <Route path="/notifications" element={<Notifications />} /> */}
    

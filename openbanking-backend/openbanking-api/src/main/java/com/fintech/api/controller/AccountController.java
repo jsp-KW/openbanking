@@ -5,6 +5,7 @@ package com.fintech.api.controller;
 // DTO 설계로 무한 순환 참조 가능성 방지 및 프론트엔드단에서 과하게 많은 정보 받는것 방지
 // 출력 포맷 커스터마이징 어려움 방지
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,7 @@ import com.fintech.api.dto.MessageResponse;
 import com.fintech.api.dto.TransferRequestDto;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -34,6 +36,10 @@ public class AccountController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("")
     public ResponseEntity<AccountDto> createAccount(@Valid @RequestBody AccountRequestDto accountDto, @AuthenticationPrincipal UserDetails userDetails) {
+        
+        System.out.println("bankId = " + accountDto.getBankId());
+        System.out.println("accountType = " + accountDto.getAccountType());
+        System.out.println("balance = " + accountDto.getBalance());
         String email = userDetails.getUsername();
         Account created = accountService.createAccount(accountDto,email);
         return ResponseEntity.ok(AccountDto.from(created));
@@ -95,12 +101,13 @@ public class AccountController {
     //GET /accounts/number/{accountNumber}
     
     @SecurityRequirement(name = "bearerAuth")
-    @GetMapping("/number/{accountNumber}")
+    @GetMapping("/number/{accountNumber}/bank/{bankId}")
     public ResponseEntity<AccountDto> getAccountByNumber(
         @PathVariable String accountNumber,
+        @PathVariable Long bankId,
         @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return accountService.getAccountByNumber(accountNumber)
+        return accountService.getAccountByNumber(accountNumber,bankId)
             .filter(account ->
                 account.getUser().getEmail().equals(userDetails.getUsername()) || userDetails.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
@@ -122,10 +129,34 @@ public class AccountController {
     ) {
         accountService.transfer(
             userDetails.getUsername(),
+            requestDto.getFromBankId(),
+            requestDto.getToBankId(),
             requestDto.getFromAccountNumber(),
             requestDto.getToAccountNumber(),
             requestDto.getAmount()
         );
         return ResponseEntity.ok(new MessageResponse("이체 완료"));
     }
+
+     @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{accountId}/balance")
+    public ResponseEntity<?> getAccountBalance(
+        @PathVariable Long accountId,
+        @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return accountService.getAccountById(accountId)
+            .filter(account ->
+                account.getUser().getEmail().equals(userDetails.getUsername()) ||
+                userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
+            )
+            .map(account -> ResponseEntity.ok(Map.of(
+                "accountNumber", account.getAccountNumber(),
+                "balance", account.getBalance() != null ? account.getBalance() : 0L,
+                "bankName", account.getBank().getBankName()
+            )))
+            .orElse(ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", "해당 계좌에 접근할 권한이 없습니다.")));
+    }
+    
 }

@@ -48,6 +48,7 @@ public class SecurityConfig {
              .requestMatchers("/", "/hello").permitAll() 
              .requestMatchers("/redis/**").permitAll()
             .requestMatchers("/api/auth/**").permitAll()
+           
             .requestMatchers(
     "/", "/hello",                      // 루트 테스트용
     "/swagger-ui/**",                  // Swagger UI HTML 파일

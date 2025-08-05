@@ -41,7 +41,7 @@ public class AuthController {
 
         String role = authentication.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
         String accesstoken = jwtUtil.createToken(request.getEmail(), role);
-        String refreshToken = jwtUtil.createRefreshToken(request.getEmail(), role);
+        String refreshToken = jwtUtil.createRefreshToken(request.getEmail(), role);// refresh token 시 role 이 null 되는 문제 해결
 
         redisTemplate.opsForValue().set("refresh:" + request.getEmail(),
         
@@ -89,7 +89,10 @@ public class AuthController {
         String email = jwtUtil.getUsername(refreshToken);// refreshtoken에서 사용자 email 추출
 
         String redisToken = redisTemplate.opsForValue().get("refresh:" + email); //redis에 저장된 refreshToken 가져오기
-
+        
+        System.out.println("가져온 redis refreshToken" + redisToken);
+        System.out.println("refreshToken" + refreshToken);
+        
         if (redisToken == null || !redisToken.equals(refreshToken)) {// redis에 없거나, 일치하지 않으면 탈취/만료된 토큰-> 인증 실패
             return ResponseEntity.status(401).body("RefreshToken이 만료되었거나 일치하지 않음.");
         }

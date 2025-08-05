@@ -185,30 +185,46 @@ const handleLogout = async () => {
       )}
 
       {/* 계좌 목록 */}
-      {accounts.length > 0 && (
-        <div className="space-y-4">
-          {accounts.map((acc) => (
-            <div
-              key={acc.id}
-              className="bg-white rounded-xl shadow-md p-4 flex justify-between items-center"
-            >
-              <div>
-                <p className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <BsBank2 className="text-yellow-500" />
-                  {acc.bankName || '은행명 없음'}
-                </p>
-                <p className="text-sm text-gray-600">계좌번호: {acc.accountNumber}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">
-                  {typeof acc.balance === 'number' ? acc.balance.toLocaleString() : '0'} 원
-                </p>
-              </div>
-            </div>
-          ))}
+     {accounts.length > 0 && (
+  <div className="space-y-4">
+    {accounts.map((acc) => (
+      <div
+        key={acc.id}
+        className="bg-white rounded-xl shadow-md p-4 flex justify-between items-center"
+      >
+        <div>
+          <p className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <BsBank2 className="text-yellow-500" />
+            {acc.bankName || '은행명 없음'}
+          </p>
+          <p className="text-sm text-gray-600">계좌번호: {acc.accountNumber}</p>
         </div>
-      )}
+        <div className="text-right">
+          <p className="text-lg font-bold text-gray-900">
+            {(Number(acc.balance) || 0).toLocaleString()} 원
+          </p>
+          <button
+            onClick={() => navigate(`/transfer?from=${acc.accountNumber}`)}
+            className="mt-2 text-sm text-blue-600 underline hover:text-blue-800"
+          >
+            이체하기 →
+          </button>
+        </div>
+      </div>
+    ))}
+
+    {/* ✅ 계좌 추가 버튼 */}
+    <div className="text-center mt-6">
+      <button
+        onClick={() => navigate('/create-account')}
+        className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+      >
+        ➕ 계좌 추가 개설하기
+      </button>
     </div>
+  </div>
+)}
+</div>
   );
 }
 

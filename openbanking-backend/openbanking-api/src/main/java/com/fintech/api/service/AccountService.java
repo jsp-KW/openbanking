@@ -2,6 +2,7 @@ package com.fintech.api.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -38,16 +39,14 @@ public class AccountService {
     private final NotificationService notificationService;
 
     // 계좌 번호 생성 로직!!
-    private String makeAccountNumber() {
+    private String makeAccountNumber(Bank bank) {
         String accountNumber;
-
+        String bankCode = bank.getCode();
         do {
-            long raw = (long)(Math.random() * 1_0000_0000_0000L + 1000_0000_0000L); // 12자리
-            String rawString = String.valueOf(raw);
-            accountNumber = rawString.substring(0, 4) + "-" +
-                            rawString.substring(4, 8) + "-" +
-                            rawString.substring(8); // "1234-5678-9012"
-        } while (accountRepository.findByAccountNumber(accountNumber).isPresent());
+            long raw = ThreadLocalRandom.current().nextLong(10000000, 99999999);
+            accountNumber = bankCode + "-" + raw;
+        
+        } while (accountRepository.existsByAccountNumber(accountNumber));
 
         return accountNumber;
     }
@@ -79,9 +78,9 @@ public class AccountService {
     Account account = new Account();
     account.setUser(user);
     account.setBank(bank);
-    account.setAccountNumber(makeAccountNumber());
-    account.setBalance(dto.getBalance());
-
+    account.setAccountNumber(makeAccountNumber(bank));
+    account.setBalance(dto.getBalance() != null ? dto.getBalance() : 0L);
+    account.setAccountType(dto.getAccountType());
     Account saved = accountRepository.save(account);
 
     notificationService.createNotification(
@@ -132,28 +131,35 @@ public class AccountService {
 
     }
   
-    public Optional<Account> getAccountByNumber(String accountNumber) {
-    return accountRepository.findByAccountNumber(accountNumber);
+    public Optional<Account> getAccountByNumber(String accountNumber, Long bankId) {
+    return accountRepository.findByAccountNumberAndBankId(accountNumber,bankId);
     }
 
     // 이체 입출금 서비스 로직 추가구현
     @Transactional
-    public void transfer(String email, String fromAccountNumber, String toAccountNmuber, Long amount) {
+    public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount) {
 
-        Account from = accountRepository.findByAccountNumber(fromAccountNumber).orElseThrow(()->
-            new IllegalArgumentException("출금 계좌가 유효하지 않습니다.")
+        Account from = accountRepository.findByAccountNumberAndBankId(fromAccountNumber,fromBankId).orElseThrow(()->
+            new IllegalArgumentException("출금 계좌 또는 은행 정보가 유효하지 않습니다.")
         );
 
-        Account to = accountRepository.findByAccountNumber(toAccountNmuber).orElseThrow(()->
-            new IllegalArgumentException("입금 계좌가 유효하지 않습니다.")
+        Account to = accountRepository.findByAccountNumberAndBankId(toAccountNumber,toBankId).orElseThrow(()->
+            new IllegalArgumentException("입금 계좌 또는 은행 정보가 유효하지않습니다")
+    
         );
 
         if(!from.getUser().getEmail().equals(email)) {
             throw new SecurityException("본인의 계좌에서만 이체가 가능합니다.");
         }
 
+        if (from.getId().equals(to.getId())) {
+            throw new IllegalArgumentException("동일한 계좌로는 이체가 불가능합니다.");
+        }
 
-        if (from.getBalance() < amount) { // 현재 잔액이 부족한 경우
+        Long fromBalance = from.getBalance() != null ? from.getBalance() : 0L;
+        Long toBalance = to.getBalance() != null ? to.getBalance() :0L;
+
+        if (fromBalance < amount) { // 현재 잔액이 부족한 경우
             notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()
             ).message("잔액이 부족하여 이체가 실패하였습니다.").type(NotificationType.INSUFFICIENT_BALANCE).build()
             );
@@ -162,8 +168,8 @@ public class AccountService {
         }
 
 
-        from.setBalance(from.getBalance()-amount);
-        to.setBalance(to.getBalance() + amount);
+        from.setBalance(fromBalance-amount);
+        to.setBalance(toBalance + amount);
 
         Transaction withdrawTx = Transaction.builder()
         .account(from)
@@ -190,7 +196,7 @@ public class AccountService {
         // 이체자 알람
 
         notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId())
-            .message(amount+ "원이 "  + toAccountNmuber + " 계좌로 이체 완료되었습니다.")
+            .message(amount+ "원이 "  + toAccountNumber + " 계좌로 이체 완료되었습니다.")
             .type (NotificationType.TRANSFER).build()
         
         );
@@ -205,6 +211,10 @@ public class AccountService {
         // 이체하는 사람에게 알람
         if (amount >= high_value_threshold) {
             notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 이체되었습니다.")
+            .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+            );
+
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 입금되었습니다.")
             .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
             );
         }

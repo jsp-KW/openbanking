@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // redisTemplate injection
     private final RedisTemplate<String, String> redisTemplate;
 
-
+    
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
@@ -45,10 +45,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 회원가입에 대한 부분은 인증이 필요하지 않은 경우이므로
         // if 문 처리로 이 경로에 대해서는 필터를 통과시키고
        if (
-        path.startsWith("/auth") ||
+        path.startsWith("/auth") || path.startsWith("/api/auth/refresh")||
         (method.equals("POST") && path.equals("/users")) ||
         (method.equals("POST") && path.equals("/users/"))
+
+
     ) {
+        System.out.println("필터 건너뜀 확인");
         filterChain.doFilter(request, response);
         return;
     }
@@ -89,7 +92,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = org.springframework.security.core.userdetails.User.withUsername(email).password("").authorities("ROLE_"+role).build();
 
                 
-                 System.out.println("  - 부여된 권한: " + userDetails.getAuthorities());
+                System.out.println("  - 부여된 권한: " + userDetails.getAuthorities());
                 // 인증 객체 생성 및 SecurityContext에 등록
                 // 이후 controller에서 @AuthenticationPrincipal 이나 SecurityContextHolder로 사용자 정보에 대해 access가 가능
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails,null, userDetails.getAuthorities());

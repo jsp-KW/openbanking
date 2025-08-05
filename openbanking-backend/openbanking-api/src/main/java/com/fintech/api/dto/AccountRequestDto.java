@@ -14,4 +14,6 @@ public class AccountRequestDto {
     
     @PositiveOrZero
     private Long balance;
+
+    private String  accountType;
 }

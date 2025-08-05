@@ -9,4 +9,7 @@ public class TransferRequestDto {
     private String fromAccountNumber;
     private String toAccountNumber;
     private Long amount;
+    private Long fromBankId;
+    private Long toBankId;
+    
 }
