@@ -9,7 +9,7 @@ RESTful API 서버를 구현하고 있습니다.
 ## 🚀 주요 기능 요약
 
 ### 사용자 (User)
-- 사용자 회원가입 및 로그인 (JWT 인증)
+- 사용자 회원가입 및 로그인 (JWT 인증+ redis 기반 블랙리스트)
 - 사용자 정보 조회
 
 ### 계좌 (Account)
@@ -128,6 +128,9 @@ RESTful API 서버를 구현하고 있습니다.
 
 ---
 <img width="1233" height="734" alt="image" src="https://github.com/user-attachments/assets/7b1d4029-9bf0-46a2-98c4-cbbc4c4cf236" />
+---
+<img width="964" height="124" alt="image" src="https://github.com/user-attachments/assets/067d0457-66cb-4b16-98a3-a6a4f03fbe00" />
+redis CLI 로 조회한 사진
 
 
 ## 📈 개발 현황 및 계획
@@ -148,4 +151,4 @@ RESTful API 서버를 구현하고 있습니다.
 - 거래내역 필터링 (기간/타입별 조회)
 - 관리자/운영자 역할 기반 권한 제어
 - 예약 이체 취소 API, 예약 이체 실패시 자동 재시도 처리, kafka 기반 처리 도입
-- redis 도입 예정
+- redis 도입 예정(완료)
