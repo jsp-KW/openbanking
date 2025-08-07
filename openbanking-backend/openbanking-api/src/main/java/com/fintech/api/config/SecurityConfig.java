@@ -56,6 +56,7 @@ public class SecurityConfig {
     "/swagger-resources/**",          // Swagger 리소스
     "/webjars/**"                      // Swagger 정적 리소스
 ).permitAll()
+            
             .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // 회원가입은 누구나 가능
             .requestMatchers(HttpMethod.POST, "/api/banks").hasRole("ADMIN") // 은행 등록 / 삭제는 관리자만 가능
             .requestMatchers(HttpMethod.DELETE, "/api/banks/**").hasRole("ADMIN")

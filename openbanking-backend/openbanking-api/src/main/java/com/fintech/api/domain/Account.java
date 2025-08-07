@@ -41,7 +41,8 @@ public class Account {
     @Column(unique = true)
     private String accountNumber;
 
-
+    //accountCreated -> 계좌 생성시간도 추가적으로 고려해보기
+    
     private String accountType; //입출금 적금 등 
 
     // 사용자와 계좌 -> 1:N  일대다 관계 

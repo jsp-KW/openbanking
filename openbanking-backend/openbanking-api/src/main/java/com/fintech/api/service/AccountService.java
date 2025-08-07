@@ -74,6 +74,27 @@ public class AccountService {
 
     Bank bank = bankRepository.findById(dto.getBankId())
         .orElseThrow(() -> new IllegalArgumentException("은행 없음"));
+    
+ 
+    // 계좌 수 제한 10개로
+    if (accountRepository.countByuserId(user.getId())>=10) {
+        throw new IllegalStateException("계좌는 최대 10개까지 개설이 가능합니다.");
+    } 
+    // 초기 잔액 음수 방지하는 예외처리
+    if (dto.getBalance()!=null && dto.getBalance()<0) {
+        throw new IllegalArgumentException("초기 잔액은 음수일 수 없습니다.");
+    }
+
+    //계좌의 유효성 검사-> 이넘타입으로 변경 고려하기
+
+    List<String> valid_accountType = List.of("예적금","입출금","청약");
+    if (!valid_accountType.contains(dto.getAccountType())) {
+        throw new IllegalArgumentException("유효하지 않은 계좌유형입니다.");
+    }
+    // 같은 계좌번호 + 같은 계좌유형이 존재하는지
+    if (accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(),bank.getId(), dto.getAccountType())) {
+        throw new IllegalArgumentException("동일한 유형과 같은 계좌번호를 가진 계좌가 이미 존재합니다.");
+    }
 
     Account account = new Account();
     account.setUser(user);

@@ -32,4 +32,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
    Optional<Account> findByAccountNumberAndBankId(String accountNumber,Long bankId);
 
    boolean existsByAccountNumber(String accountNumber);
+   int countByuserId(Long id);
+   boolean existsByUserIdAndBankIdAndAccountType(Long id, Long id2, String accountType);
 }

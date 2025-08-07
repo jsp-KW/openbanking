@@ -29,6 +29,8 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis' // redis 
     implementation 'org.apache.commons:commons-pool2'
