@@ -64,9 +64,7 @@ public class AccountServiceTest {
 
     @Test
     void testCreateAccount() {
-        
-
-     
+    
         String email = "user@example.com";
 
         User mockUser = User.builder().id(1L).email(email).build();// 빌더 패턴으로 객체 생성

@@ -58,6 +58,9 @@ public class User {
     @JsonManagedReference("user-account")
     private List <Account> accounts = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user")
+    private List<UserDeposit> deposits = new ArrayList<>();
+    
 
     
 }

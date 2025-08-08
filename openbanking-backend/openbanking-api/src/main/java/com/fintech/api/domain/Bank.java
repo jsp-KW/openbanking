@@ -35,8 +35,10 @@ public class Bank {
     private String bankName;
     private String website_url;
 
-    @OneToMany(mappedBy = "bank")
+    @OneToMany(mappedBy = "bank") // 하나의 은행 -> 여러개의 계좌
     @JsonBackReference("bank-account")
     private List<Account> accounts = new ArrayList<>();
 
+    @OneToMany(mappedBy = "bank")// 하나의 은행 -> 여러개의 예금상품
+    private List<DepositProduct> depositProducts = new ArrayList<>();
 }

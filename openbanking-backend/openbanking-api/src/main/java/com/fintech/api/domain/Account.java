@@ -67,4 +67,9 @@ public class Account {
     @OneToMany(mappedBy = "account", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Transaction> transactions = new ArrayList<>();
+
+
+    //내 계좌로 가입된 예금상품 리스트를 보기위해
+    @OneToMany(mappedBy = "account")
+    private List<UserDeposit> deposits = new ArrayList<>();
 }
