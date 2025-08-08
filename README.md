@@ -127,7 +127,8 @@ RESTful API 서버를 구현하고 있습니다.
 | GET    | /        | 서버 기본 응답 확인  |
 
 ---
-<img width="1233" height="734" alt="image" src="https://github.com/user-attachments/assets/7b1d4029-9bf0-46a2-98c4-cbbc4c4cf236" />
+<img width="1030" height="769" alt="image" src="https://github.com/user-attachments/assets/58e5d841-fbbc-453b-8b9d-2380b6569b5e" />
+
 ---
 <img width="964" height="124" alt="image" src="https://github.com/user-attachments/assets/067d0457-66cb-4b16-98a3-a6a4f03fbe00" />
 redis CLI 로 조회한 사진
