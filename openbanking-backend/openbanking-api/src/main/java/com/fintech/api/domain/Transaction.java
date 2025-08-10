@@ -7,6 +7,13 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
+
+@Table(
+    name = "`transaction`",
+    indexes = {
+        @Index(name = "uk_transaction_request_id", columnList = "request_id", unique = true)
+    }
+)
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,13 +26,20 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name ="request_id", length=64, unique = true)
+    private String requestId;
+
     private Long amount; // 거래 금액
+
+    @Column(name="type", length= 32, nullable= false)
     private String type; // 거래 종류 -> 입금인지 출금인지 -> ENUM 으로 바꿀지 말지 고민중.
     private String description; // 거래 내역 설명
 
 
     private LocalDateTime transactionDate; // 거래 시간
     private Long balanceAfter; // 거래 후 잔액
+
+  
 
 
     // 계좌와 거래내역 관계

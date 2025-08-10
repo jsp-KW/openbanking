@@ -1,6 +1,7 @@
 package com.fintech.api.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -8,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,12 +34,15 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionWithAccountDto> createTransaction (
         @AuthenticationPrincipal UserDetails userDetails, // 현재 로그인하고 있는 사용자 정보
+        @RequestHeader("Idempotency-Key") String idempotencyKey, // FRONT END에서 전달 받은 키
         @RequestParam Long accountId,
         @RequestParam Long amount,
         @RequestParam String type
-    ) {
+     
+    ) { 
         String email = userDetails.getUsername();
-        Transaction created = transactionService.createTransaction(email,accountId, amount, type);
+        String requestId = idempotencyKey;
+        Transaction created = transactionService.createTransaction(email,accountId, amount,requestId, type);
         return ResponseEntity.ok(TransactionWithAccountDto.from(created));
     }
 

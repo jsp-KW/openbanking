@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,6 +46,8 @@ public class Account {
     
     private String accountType; //입출금 적금 등 
 
+    @Version //목적 : 동시에 두 건이 같은 계좌를 접근하는 경우 중복 차감 방지(충돌 방지를 위해)
+    private Long version;
     // 사용자와 계좌 -> 1:N  일대다 관계 
     // 계좌 입장에서 다대일 관계이므로
     private Long balance;

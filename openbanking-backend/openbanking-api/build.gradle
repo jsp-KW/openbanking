@@ -30,6 +30,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 
+	implementation 'org.flywaydb:flyway-mysql' 
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.flywaydb:flyway-core' // Flyway : db 스키마-> 코드처럼 버전관리해주는 도구
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis' // redis 

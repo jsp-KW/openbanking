@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.Bank;
@@ -158,7 +160,22 @@ public class AccountService {
 
     // 이체 입출금 서비스 로직 추가구현
     @Transactional
-    public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount) {
+    public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String requestId) {
+
+
+        // // 출금 중복 방지 예외처리
+
+        // if (transactionRepository.findByRequestIdAndType(requestId,"출금").isPresent()) {
+        //     throw new IllegalStateException("이미 처리된 출금 요청입니다.");
+        // }
+
+        // // 입금 중복 방지 예외처리
+
+        // if (transactionRepository.findByRequestIdAndType(requestId, "입금").isPresent()) {
+        //     throw new IllegalStateException("이미 처리된 입금 요청입니다.");
+        // }
+
+
 
         Account from = accountRepository.findByAccountNumberAndBankId(fromAccountNumber,fromBankId).orElseThrow(()->
             new IllegalArgumentException("출금 계좌 또는 은행 정보가 유효하지 않습니다.")
@@ -188,58 +205,67 @@ public class AccountService {
             throw new IllegalArgumentException("잔액이 부족하여 이체가 실패하였습니다.");
         }
 
+        try {
+            from.setBalance(fromBalance-amount);
+            to.setBalance(toBalance + amount);
 
-        from.setBalance(fromBalance-amount);
-        to.setBalance(toBalance + amount);
+            Transaction withdrawTx = Transaction.builder()
+            .account(from)
+            .amount(-amount)
+            .type("출금")
+            .balanceAfter(from.getBalance())
+            .description(to.getAccountNumber() + "으로 이체됨")
+            .requestId(requestId)
+            .build();
 
-        Transaction withdrawTx = Transaction.builder()
-        .account(from)
-        .amount(-amount)
-        .type("출금")
-        .balanceAfter(from.getBalance())
-        .description(to.getAccountNumber() + "으로 이체됨")
-        .build();
-
-        Transaction depositTx = Transaction.builder()
+            Transaction depositTx = Transaction.builder()
             .account(to)
             .amount(amount)
             .type("입금")
             .balanceAfter(to.getBalance())
             .description(from.getAccountNumber() + "에서 입금됨")
+            .requestId(requestId)
             .build();
 
 
-        Long high_value_threshold =  1_000_000L; // 고액 임계값 변수 
+            
 
-        transactionRepository.save(withdrawTx);
-        transactionRepository.save(depositTx);
+            transactionRepository.save(withdrawTx);
+            transactionRepository.save(depositTx);
 
-        // 이체자 알람
+            
+                // 이체자 알람
 
-        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId())
-            .message(amount+ "원이 "  + toAccountNumber + " 계좌로 이체 완료되었습니다.")
-            .type (NotificationType.TRANSFER).build()
-        
-        );
-        // 입금자 알람
-        notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId())
-            .message(from.getAccountNumber() + " 계좌에서 "  + amount + "원이 입금되었습니다.")
-            .type (NotificationType.TRANSFER).build()
-        
-        );
-
-        // 고액 기준이 넘는 돈을 이체하는 경우
-        // 이체하는 사람에게 알람
-        if (amount >= high_value_threshold) {
-            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 이체되었습니다.")
-            .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId())
+                .message(amount+ "원이 "  + toAccountNumber + " 계좌로 이체 완료되었습니다.")
+                .type (NotificationType.TRANSFER).build()
+            
             );
-
-            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 입금되었습니다.")
-            .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+            // 입금자 알람
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId())
+                .message(from.getAccountNumber() + " 계좌에서 "  + amount + "원이 입금되었습니다.")
+                .type (NotificationType.TRANSFER).build()
+            
             );
+            Long high_value_threshold =  1_000_000L; // 고액 임계값 변수 
+            // 고액 기준이 넘는 돈을 이체하는 경우
+            // 이체하는 사람에게 알람
+            if (amount >= high_value_threshold) {
+                notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 이체되었습니다.")
+                .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+                );
+
+                notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 입금되었습니다.")
+                .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+                );
+            }
         }
-
+        catch (DataIntegrityViolationException dup) {
+              // (request_id, type) 유니크 충돌 → 이미 처리된 요청. 이 트랜잭션은 롤백
+              TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+              return;
+        }
+       
     }
 
 }

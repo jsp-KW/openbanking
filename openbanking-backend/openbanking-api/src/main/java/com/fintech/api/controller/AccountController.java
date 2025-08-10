@@ -23,6 +23,7 @@ import com.fintech.api.dto.TransferRequestDto;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 @RestController
@@ -125,15 +126,19 @@ public class AccountController {
     @PostMapping("/transfer")
     public ResponseEntity<MessageResponse> transfer(
         @AuthenticationPrincipal UserDetails userDetails,
-        @RequestBody TransferRequestDto requestDto
+        @RequestBody TransferRequestDto requestDto,
+        @RequestHeader("Idempotency-Key") String requestId // 프론트에서 받은 멱등키
     ) {
+   
         accountService.transfer(
+
             userDetails.getUsername(),
             requestDto.getFromBankId(),
             requestDto.getToBankId(),
             requestDto.getFromAccountNumber(),
             requestDto.getToAccountNumber(),
-            requestDto.getAmount()
+            requestDto.getAmount(),
+            requestId
         );
         return ResponseEntity.ok(new MessageResponse("이체 완료"));
     }

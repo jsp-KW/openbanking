@@ -11,5 +11,6 @@ public class TransferRequestDto {
     private Long amount;
     private Long fromBankId;
     private Long toBankId;
+
     
 }
