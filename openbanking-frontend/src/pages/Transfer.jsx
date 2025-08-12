@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from '../api/axiosInstance';
+import { makeFingerprint, getOrCreateKey, clearKey } from '../utils/idempotency';
 
 export default function Transfer() {
   const navigate = useNavigate();
@@ -18,17 +19,23 @@ export default function Transfer() {
   const [toBankId, setToBankId] = useState('');
   const [amount, setAmount] = useState('');
 
+  const [submitting, setSubmitting] = useState(false);
+
+  // TODO: JWT payload에서 userId 가져오기
+  const userId = 'me'; // 임시 값
+
   // 계좌 및 은행 목록 불러오기
   useEffect(() => {
-    // 🔹 계좌 목록
     axios.get('/accounts/my')
       .then((res) => {
-        console.log('📄 내 계좌 목록:', res.data);
-        setAccounts(res.data);
+        // balance null → 0으로 정규화
+        const normalized = res.data.map(a => ({ ...a, balance: a.balance ?? 0 }));
+        setAccounts(normalized);
+
         const initialFrom = params.get('from');
         if (initialFrom) {
           setFromAccount(initialFrom);
-          const matched = res.data.find(acc => acc.accountNumber === initialFrom);
+          const matched = normalized.find(acc => acc.accountNumber === initialFrom);
           if (matched) setFromBankId(matched.bankId);
         }
       })
@@ -37,7 +44,6 @@ export default function Transfer() {
         navigate('/dashboard');
       });
 
-    // 🔹 은행 목록
     axios.get('/banks')
       .then((res) => setBanks(res.data))
       .catch(() => {
@@ -53,52 +59,68 @@ export default function Transfer() {
   };
 
   // 이체 처리
-const handleTransfer = async (e) => {
-  e.preventDefault();
+  const handleTransfer = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
 
-  const parsedAmount = parseFloat(amount);
+    const parsedAmount = Number(amount);
 
-  if (
-    !fromAccount ||
-    !toAccount ||
-    Number.isNaN(parsedAmount) ||
-    parsedAmount <= 0 ||
-    fromBankId === null ||
-    toBankId === ''
-  ) {
-    alert('모든 항목을 올바르게 입력해주세요.');
-    return;
-  }
-    console.log('💬 이체 요청', {
-    fromAccountNumber: fromAccount,
-    toAccountNumber: toAccount,
-    amount: parsedAmount,
-    fromBankId,
-    toBankId,
-  });
-  try {
-    await axios.post('/accounts/transfer', {
+    if (
+      !fromAccount ||
+      !toAccount ||
+      Number.isNaN(parsedAmount) ||
+      parsedAmount <= 0 ||
+      fromBankId === null ||
+      toBankId === ''
+    ) {
+      alert('모든 항목을 올바르게 입력해주세요.');
+      return;
+    }
+
+    const payload = {
       fromAccountNumber: fromAccount,
       toAccountNumber: toAccount,
       amount: parsedAmount,
-      fromBankId: parseInt(fromBankId),
-      toBankId: parseInt(toBankId),
-    });
+      fromBankId: Number(fromBankId),
+      toBankId: Number(toBankId),
+    };
 
-    alert('이체 성공!');
-    navigate('/transactions');
-  } catch (err) {
-    console.error('이체 실패:', err);
-    alert(err.response?.data?.message || '이체 실패');
-  }
-};
+    // fingerprint 기반 멱등키 생성/재사용
+    const fp = makeFingerprint(payload);
+    const { key: idemKey, storageKey } = getOrCreateKey(userId, fp);
+
+    setSubmitting(true);
+    try {
+      await axios.post('/accounts/transfer', payload, {
+        headers: {
+          'Idempotency-Key': idemKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      alert('이체 성공!');
+      clearKey(storageKey);
+      navigate('/transactions');
+    } catch (err) {
+      console.error('이체 실패:', err);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+
+      // 확정 실패 시 키 삭제
+      if (status && [400, 401, 403, 404, 409, 422].includes(status)) {
+        clearKey(storageKey);
+      }
+      alert(message || '이체 실패');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-yellow-50 py-12 px-6">
       <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">💸 이체하기</h2>
         <form onSubmit={handleTransfer} className="space-y-5">
-
           {/* 출금 계좌 */}
           <div>
             <label className="block mb-1 text-sm font-semibold text-gray-600">출금 계좌</label>
@@ -111,7 +133,7 @@ const handleTransfer = async (e) => {
               <option value="">출금 계좌 선택</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.accountNumber}>
-                  {acc.bankName} - {acc.accountNumber} (잔액: {acc.balance.toLocaleString()}원)
+                  {acc.bankName} - {acc.accountNumber} (잔액: {(acc.balance ?? 0).toLocaleString()}원)
                 </option>
               ))}
             </select>
@@ -165,9 +187,11 @@ const handleTransfer = async (e) => {
           {/* 전송 버튼 */}
           <button
             type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-semibold transition-colors duration-300"
+            disabled={submitting}
+            className={`w-full text-white py-2 rounded-lg font-semibold transition-colors duration-300
+              ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600'}`}
           >
-            이체하기
+            {submitting ? '전송 중...' : '이체하기'}
           </button>
         </form>
       </div>

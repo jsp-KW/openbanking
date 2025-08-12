@@ -121,6 +121,7 @@ public class AccountController {
     // POST 방식 /accounts/transfer
     // 권한 인증 방식 Bearer {token}
     // fromAccountId 하고 toAccountId로?
+    // 낙관락 기반
 
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/transfer")
@@ -141,6 +142,26 @@ public class AccountController {
             requestId
         );
         return ResponseEntity.ok(new MessageResponse("이체 완료"));
+    }
+
+    // 비관적락 api
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/transfer-pessimistic")
+    public ResponseEntity<MessageResponse> transferPessimistic(
+        @AuthenticationPrincipal UserDetails userDetails,
+        @RequestBody TransferRequestDto requestDto,
+        @RequestHeader("Idempotency-Key") String requestId
+    ) {
+        accountService.transferWithPessimisticlock(
+            userDetails.getUsername(),
+            requestDto.getFromBankId(),
+            requestDto.getToBankId(),
+            requestDto.getFromAccountNumber(),
+            requestDto.getToAccountNumber(),
+            requestDto.getAmount(),
+            requestId
+        );
+        return ResponseEntity.ok(new MessageResponse("이체 완료(pessimistic)"));
     }
 
      @SecurityRequirement(name = "bearerAuth")

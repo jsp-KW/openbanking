@@ -53,12 +53,12 @@ public class TransactionService {
         
         // 멱등성 보장 -> 기존에 처리된 요청인 경우 즉시 반환하도록
 
-        Optional<Transaction> already_exist = transactionRepository.findByRequestIdAndType( requestId, type);
+        Optional<Transaction> already_exist = transactionRepository.findByRequestIdAndType(requestId, type);
 
         if (already_exist.isPresent()) { //빠르게 중복을 차단하는 용도
             // 대부분의 경우 동시 요청이 아니라면 여기서 이미 걸러져서 성능을 절약
             // 하지만 만약에 두 요청이 거의 동시에 동작하는 경우, isPresent() 에서 없음을 보고 insert 시도가 가능하게됨..accountController
-            // 동시성 문제 발생
+            // 멱등성 보장해야하므로..
             return already_exist.get();
         }
         // 예외처리 -> HTTP RESPONSE  400 BAD REQUERST ERROR

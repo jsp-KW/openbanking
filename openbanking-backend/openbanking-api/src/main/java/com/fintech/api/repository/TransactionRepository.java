@@ -12,6 +12,7 @@ public interface TransactionRepository  extends JpaRepository<Transaction, Long>
 
     List<Transaction> findByAccountId(Long accountId);
 
+    // unique key (request_id, type) 에 따른 전역 조회 메서드를 추가
     Optional<Transaction> findByRequestIdAndType(String requestId, String type);
     
     

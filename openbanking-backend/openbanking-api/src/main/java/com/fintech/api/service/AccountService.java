@@ -159,6 +159,7 @@ public class AccountService {
     }
 
     // 이체 입출금 서비스 로직 추가구현
+    // 낙관락
     @Transactional
     public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String requestId) {
 
@@ -266,6 +267,138 @@ public class AccountService {
               return;
         }
        
+    }
+
+    // 비관락 전용 서비스 로직 추가하기
+
+    // 락 없이 id 파악 -> id 오름차순으로 findByIdForUpdate 함수로 베타락 -> from/to 매핑 -> 잔액처리
+
+    @Transactional
+    public void transferWithPessimisticlock(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String requestId)  {
+
+
+        if (amount == null || amount <=0)  {throw new IllegalArgumentException("이체 금액이 올바르지 않습니다.");}
+
+        // 잠금 없이 식별하기
+        Account from0 = accountRepository.findByAccountNumberAndBankId(fromAccountNumber, fromBankId).orElseThrow(
+            ()-> new IllegalArgumentException("출금 게좌 또는 은행 정보가 유효하지 않습니다.")
+        );
+
+        Account to0 = accountRepository.findByAccountNumberAndBankId(toAccountNumber, toBankId).orElseThrow(
+            ()-> new IllegalArgumentException("입금 게좌 또는 은행 정보가 유효하지 않습니다.")
+        );
+
+        if (from0.getId().equals(to0.getId())) {
+            throw new IllegalArgumentException("동일한 계좌로는 이체가 불가능합니다.");
+        }
+
+        // 데드락 방지
+
+        // 상황 가정
+        // 두명의 사용자가 동시에 이체한다
+        // A가 B에게 이체, B가 A에게 이체 요청이 동시에 들어오는 상황
+        // 비관적 락은 조회 순서대로 락을 가져가기 때문에 한쪽은 먼저 A계좌를 잠그고 B를 기다리고
+        // 다른한쪽은 먼저 B계좌를 잠그고 A를 기다리는 교착상태(데드락) 발생 가능
+
+        // 이 문제를 해결하기 위해
+        // 항상 작은 ID -> 큰 ID 순서로 락을 거는 규칙을 만들면, 모든 트랜잭션이 같은 순서로 락을 잡기 때문에 데드락이 사라진다.
+        // 즉, 락 순서를 고정시킴으로써 교착상태를 원천 차단하는 법
+        // 오름차순을 사용함, 내림차순도 가능
+        
+
+        Long a = Math.min(from0.getId(), to0.getId());// 작은ID
+        Long b = Math.max(from0.getId(), to0.getId());// 큰 ID
+
+        // 락 작은 아이디 -> 큰 아이디 순서로 베타락 획득
+        Account first = accountRepository.findByIdForUpdate(a).orElseThrow();
+        Account second = accountRepository.findByIdForUpdate(b).orElseThrow();
+       
+        // 데드락 회피를 위해 id를 오름차순으로 조회하였고
+        // 조회한 id와 원래 레코드 id와 다를 수 있기 때문에 매핑
+        Account from = first.getId().equals(from0.getId()) ? first : second;
+        Account to = first.getId().equals(to0.getId()) ? first : second;
+
+
+        if (!from.getUser().getEmail().equals(email)) {
+            throw new SecurityException("본인의 계좌에서만 이체가 가능합니다.");
+        }
+
+        long fromBalance = from.getBalance() == null? 0L : from.getBalance();
+        long toBalance = to.getBalance() == null? 0L : to.getBalance();
+
+        if (fromBalance <amount ) {
+            notificationService.createNotification(CreateNotificationRequestDto.builder()
+                .userId(from.getUser().getId())
+                .message("잔액이 부족하여 이체가 실패하였습니다.")
+                .type(NotificationType.INSUFFICIENT_BALANCE)
+                .build());
+
+            
+            throw new IllegalArgumentException("잔액이 부족하여 이체가 실패하였습니다.");
+        }
+
+        try {
+            from.setBalance(fromBalance-amount);
+            to.setBalance(toBalance + amount);
+
+            Transaction withdrawTx = Transaction.builder()
+            .account(from)
+            .amount(-amount)
+            .type("출금")
+            .balanceAfter(from.getBalance())
+            .description(to.getAccountNumber() + "으로 이체됨")
+            .requestId(requestId)
+            .build();
+
+            Transaction depositTx = Transaction.builder()
+            .account(to)
+            .amount(amount)
+            .type("입금")
+            .balanceAfter(to.getBalance())
+            .description(from.getAccountNumber() + "에서 입금됨")
+            .requestId(requestId)
+            .build();
+
+
+            
+
+            transactionRepository.save(withdrawTx);
+            transactionRepository.save(depositTx);
+
+            
+                // 이체자 알람
+
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId())
+                .message(amount+ "원이 "  + toAccountNumber + " 계좌로 이체 완료되었습니다.")
+                .type (NotificationType.TRANSFER).build()
+            
+            );
+            // 입금자 알람
+            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId())
+                .message(from.getAccountNumber() + " 계좌에서 "  + amount + "원이 입금되었습니다.")
+                .type (NotificationType.TRANSFER).build()
+            
+            );
+            Long high_value_threshold =  1_000_000L; // 고액 임계값 변수 
+            // 고액 기준이 넘는 돈을 이체하는 경우
+            // 이체하는 사람에게 알람
+            if (amount >= high_value_threshold) {
+                notificationService.createNotification(CreateNotificationRequestDto.builder().userId(from.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 이체되었습니다.")
+                .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+                );
+
+                notificationService.createNotification(CreateNotificationRequestDto.builder().userId(to.getUser().getId()).message("고액 거래 감지: " + amount +" 원이 입금되었습니다.")
+                .type(NotificationType.HIGH_VALUE_TRANSACTION).build()
+                );
+            }
+        }
+        catch (DataIntegrityViolationException dup) {
+              // (request_id, type) 유니크 충돌 → 이미 처리된 요청. 이 트랜잭션은 롤백
+              TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+              return;
+        }
+      
+
     }
 
 }

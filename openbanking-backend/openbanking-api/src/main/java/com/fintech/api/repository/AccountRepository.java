@@ -22,8 +22,16 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 
 import com.fintech.api.domain.Account;
+import com.fintech.api.domain.User;
+
+import io.lettuce.core.dynamic.annotation.Param;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
@@ -34,4 +42,24 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
    boolean existsByAccountNumber(String accountNumber);
    int countByuserId(Long id);
    boolean existsByUserIdAndBankIdAndAccountType(Long id, Long id2, String accountType);
+
+   // 비관적 쓰기락을 위한
+   // 비관적 락은 Shared Lock(읽기 잠금), Exclusive Lock(쓰기 잠금)이 있음
+   // 비관적 락은 데이터의 대해 접근이 엄격하고, 데이터 충돌이 많을거 같은 상황에서 많이 사용
+   // 시스템 성능에 부정적 영향이 미칠 수 있음-> 같은 데이터를 수정하기 위해 다른 트랜잭션에서 가지고 있는 락을 획득하기 위해 대기시간이 길어질 수 있음
+   // 대기시간 길어지면, 성능 저하 문제, 여러 트랜잭션이 서로 여러 데이터 요청 -> 데드락 
+   
+   // Hibernate가 메서드 호출시 , 쿼리를 날려 베타락을 건다
+   // lock.timeout은 대기 시간, 초 단위로 동작하는 벤더가 많아서 운영 db 설정도 함께 고려
+     // 베타락, 다른 트랜잭션에서 read,update,delete 되는 것을 방지(읽기만 가능)
+   
+    // findById는 단순 조회이기 때문에 락이 안걸림 -> 다른 트랜잭션이 동시에 같은 레코드 수정이 가능
+    // 그러므로 @Lock(LockModeType.PESSIMISTIC_WRITE)을 붙여서 메서드 작성
+    // 두 개의 입금계좌, 출금계좌를 일정한 순서로 잠그기 위해 ID기준으로 재조회할때 사용
+    // 데드락 방지
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Account a where a.id = :id")
+    @QueryHints(@QueryHint(name= "jakarta.persistence.lock.timeout", value="5000"))
+    Optional<Account> findByIdForUpdate(@Param("id") Long id);
+
 }
