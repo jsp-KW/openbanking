@@ -2,6 +2,7 @@ package com.fintech.api.domain;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -36,10 +37,12 @@ public class Notification {
     @JoinColumn(name = "user_id")
     private User user;
 
+
     private String message;
 
   
     @Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(length = 32, nullable = false)
     private NotificationType type; // DEPOSIT, WITHDRAWAL, TRANSFER, SCHEDULED_TRANSFER
 
     @Builder.Default

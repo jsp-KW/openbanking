@@ -15,8 +15,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class CreateScheduledTransferRequestDto {
-    private Long fromAccountId;
-    private Long toAccountId;
+    private String fromAccountNumber;
+    private String toAccountNumber;
     private Long amount;
     private LocalDateTime scheduledAt;
 }

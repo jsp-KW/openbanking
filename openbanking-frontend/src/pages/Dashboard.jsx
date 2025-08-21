@@ -213,15 +213,23 @@ const handleLogout = async () => {
       </div>
     ))}
 
-    {/* ✅ 계좌 추가 버튼 */}
-    <div className="text-center mt-6">
-      <button
-        onClick={() => navigate('/create-account')}
-        className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
-      >
-        ➕ 계좌 추가 개설하기
-      </button>
-    </div>
+ 
+    <div className="flex justify-center gap-4 mt-10">
+  <button
+    onClick={() => navigate('/scheduled-transfer/new')}
+    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+  >
+    📅 예약이체 등록하기
+  </button>
+  <button
+    onClick={() => navigate('/scheduled-transfers')}
+    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+  >
+    📋 예약이체 목록 보기
+  </button>
+</div>
+
+
   </div>
 )}
 </div>

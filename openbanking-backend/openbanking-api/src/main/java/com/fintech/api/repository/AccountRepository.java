@@ -29,12 +29,14 @@ import org.springframework.data.jpa.repository.QueryHints;
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.User;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
+
+  Optional <Account> findByAccountNumber(String accountNumber);
     List<Account> findByUserId(Long userId);
    // List<Account> findByEmail(String email);
    Optional<Account> findByAccountNumberAndBankId(String accountNumber,Long bankId);

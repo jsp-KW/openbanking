@@ -6,6 +6,8 @@ import CreateAccount from '../pages/CreateAccount';
 import Signup from '../pages/Signup';
 import Transfer from '../pages/Transfer';
 import Transactions from '../pages/Transactions';
+import ScheduledTransferForm from '../pages/ScheduledTransferForm';
+import ScheduledTransferList from '../pages/ScheduledTransferList';
 
 function AppRouter() {
   return (
@@ -22,8 +24,9 @@ function AppRouter() {
          <Route path="/transfer" element={<Transfer />} />
         <Route path="/scheduled-transfer" element={<ScheduledTransfer />} />
         <Route path="/notifications" element={<Notifications />} /> */}
-   
-        
+        <Route path="/scheduled-transfer/new" element={<ScheduledTransferForm />} />
+        <Route path="/scheduled-transfers" element={<ScheduledTransferList />} />
+
       </Routes>
     </Router>
   );

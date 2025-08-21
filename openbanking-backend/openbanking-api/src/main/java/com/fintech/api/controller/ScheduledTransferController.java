@@ -5,6 +5,8 @@ import com.fintech.api.dto.ScheduledTransferListResponseDto;
 import com.fintech.api.dto.ScheduledTransferResponseDto;
 import com.fintech.api.service.ScheduledTransferService;
 import com.fintech.api.service.UserService;
+
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,14 +31,16 @@ public class ScheduledTransferController {
      *  예약이체 등록 API
      */
     @PostMapping("")
+    @SecurityRequirement(name="bearerAuth")
     public ResponseEntity<ScheduledTransferResponseDto> createScheduledTransfer(
             @RequestBody CreateScheduledTransferRequestDto dto,//front에서 보낸 필드 
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestHeader("Idempotency-Key")String requestId) {
 
         Long userId = userService.getUserIdByEmail(userDetails.getUsername());//현재로그인 된 유저 기반으로 userId 저장
 
         ScheduledTransferResponseDto result = scheduledTransferService.createScheduledTransfer(
-                userService.getUserEntityById(userId), dto); // userId를 통해 유저 엔티티를 유저 서비스 계층에서 가져와 인자로 넣어준다
+                userService.getUserEntityById(userId), dto, requestId); // userId를 통해 유저 엔티티를 유저 서비스 계층에서 가져와 인자로 넣어준다
 
         return ResponseEntity.ok(result);// 예약이체 등록 응답 dto를 넣어서 보내줌.
     }
@@ -45,6 +49,7 @@ public class ScheduledTransferController {
      * 나의 예약이체 목록 조회 API
      */
     @GetMapping("/my")
+
     public ResponseEntity<List<ScheduledTransferListResponseDto>> getMyScheduledTransfers(
             @AuthenticationPrincipal UserDetails userDetails) {
 

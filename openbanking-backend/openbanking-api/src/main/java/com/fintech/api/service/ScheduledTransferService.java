@@ -35,11 +35,13 @@ public class ScheduledTransferService {
      *  CreateScheduledTransferRequestDto 를 인자로
      */
     @Transactional
-    public ScheduledTransferResponseDto createScheduledTransfer(User user, CreateScheduledTransferRequestDto dto) {
+    public ScheduledTransferResponseDto createScheduledTransfer(User user, CreateScheduledTransferRequestDto dto, String requestId) {
+        
+        System.out.println("dto 확인"+ dto.getFromAccountNumber());
+        System.out.println("출금계좌 확인" + dto.getToAccountNumber());
+        Account from = accountRepository.findByAccountNumber(dto.getFromAccountNumber()).orElseThrow(() -> new IllegalArgumentException("출금 계좌 없습니다.")); //출금 계좌 엔티티 객체
 
-        Account from = accountRepository.findById(dto.getFromAccountId()).orElseThrow(() -> new IllegalArgumentException("출금 계좌 없습니다.")); //출금 계좌 엔티티 객체
-
-        Account to = accountRepository.findById(dto.getToAccountId()).orElseThrow(() -> new IllegalArgumentException("입금 계좌 없습니다.")); // 입금 계좌 엔티티 객체
+        Account to = accountRepository.findByAccountNumber(dto.getToAccountNumber()).orElseThrow(() -> new IllegalArgumentException("입금 계좌 없습니다.")); // 입금 계좌 엔티티 객체
 
         // 예약이체 엔티티 초기화
         ScheduledTransfer st = ScheduledTransfer.builder().user(user).fromAccount(from)
@@ -70,7 +72,7 @@ public class ScheduledTransferService {
             scheduledTransferRepository.save(s);
 
             notificationService.createNotification(CreateNotificationRequestDto.builder().userId(s.getUser().getId())
-                .message("예약 이체가 완료: " + s.getAmount() + "원 이체 성공").type(NotificationType.SCHEDULED_TRANSFER).build());
+                .message("예약 이체 완료: " + s.getAmount() + "원").type(NotificationType.SCHEDULED_TRANSFER).build());
           }
           
           catch (Exception e) {
@@ -97,15 +99,21 @@ public class ScheduledTransferService {
         from.setBalance(from.getBalance() - amount);
         to.setBalance(to.getBalance() + amount);
 
+
+        // 멱등키 백엔드기반 자동으로 생성
+        String baseId = "SCHEDULED-" + st.getId();
+        String requestIdOut = baseId + "-OUT";
+        String requestIdIn = baseId + "-IN";
+
         // 예약이체 성공시 트랜잭션 기록 남기기 위해 추가하기!!
 
         transactionRepository.save(Transaction.builder().account(from).amount(-amount).type("출금")
-        .description("예약이체 출금: " + to.getAccountNumber()).balanceAfter(from.getBalance()).build()
+        .description("예약이체 출금: " + to.getAccountNumber()).balanceAfter(from.getBalance()).requestId(requestIdOut).build()
         );
 
         
         transactionRepository.save(Transaction.builder().account(to).amount(amount).type("입금")
-        .description("예약이체 입금: " +from.getAccountNumber()).balanceAfter(to.getBalance()).build()
+        .description("예약이체 입금: " +from.getAccountNumber()).balanceAfter(to.getBalance()).requestId(requestIdIn).build()
         );
     }
 
