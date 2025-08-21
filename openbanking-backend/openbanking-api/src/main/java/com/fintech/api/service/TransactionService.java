@@ -9,6 +9,7 @@ import com.fintech.api.controller.AccountController;
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.Transaction;
 import com.fintech.api.domain.User;
+import com.fintech.api.dto.TransactionWithAccountDto;
 import com.fintech.api.repository.AccountRepository;
 import com.fintech.api.repository.TransactionRepository;
 import com.fintech.api.repository.UserRepository;
@@ -94,17 +95,19 @@ public class TransactionService {
         return transactionRepository.findById(id);
     }
 
-    public List<Transaction> getTransactionsByAccountId(String email, Long accountId) {
+ public List<TransactionWithAccountDto> getTransactionsByAccountId(String email, Long accountId) {
     User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-    Account account = accountRepository.findById(accountId)
-        .filter(a -> a.getUser().getId().equals(user.getId()))
-        .orElseThrow(() -> new IllegalArgumentException("본인의 계좌가 아닙니다."));
+    Account account = accountRepository.findByIdAndUserId(accountId, user.getId()).orElseThrow(()->
+    new IllegalArgumentException("본인의 계좌가 아닙니다."));
 
-    return transactionRepository.findByAccountId(accountId);
+      var txList = transactionRepository.findAllByAccountIdWithAccount(email, accountId);
+        // 트랜잭션 안에서 DTO로 변환
+        return txList.stream().map(TransactionWithAccountDto::from).toList();
+
     
-    }
+}
 
     public Optional<Transaction> getTransactionByIdWithAuth(String email, Long transactionId) {
     User user = userRepository.findByEmail(email)

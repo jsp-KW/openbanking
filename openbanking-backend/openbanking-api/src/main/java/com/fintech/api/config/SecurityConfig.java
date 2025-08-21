@@ -63,6 +63,10 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN") // 모든 사용자 정보 조회는 관리자만 가능
             .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN") // 모든 사용자 정보 삭제는 관리자만 가능하게
             .requestMatchers(HttpMethod.GET, "/api/accounts/my").hasAnyRole("USER", "ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/transactions/account/**").hasAnyRole("USER","ADMIN")
+            .requestMatchers(HttpMethod.GET,  "/api/transactions").hasAnyRole("USER","ADMIN") 
+            .requestMatchers(HttpMethod.POST, "/api/transactions/*").hasAnyRole("USER","ADMIN")
+            
             .anyRequest().authenticated()
         )
         .addFilterBefore(JwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

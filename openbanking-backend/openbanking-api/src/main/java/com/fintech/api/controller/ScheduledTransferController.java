@@ -7,6 +7,7 @@ import com.fintech.api.service.ScheduledTransferService;
 import com.fintech.api.service.UserService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -49,7 +50,8 @@ public class ScheduledTransferController {
      * 나의 예약이체 목록 조회 API
      */
     @GetMapping("/my")
-
+    @Transactional(readOnly= true)
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<List<ScheduledTransferListResponseDto>> getMyScheduledTransfers(
             @AuthenticationPrincipal UserDetails userDetails) {
 

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,21 +50,25 @@ public class TransactionController {
 
     // 특정 계좌에 전체 거래내역가져오기
     @GetMapping("/account/{accountId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @SecurityRequirement(name= "bearerAuth")
     public ResponseEntity<List<TransactionWithAccountDto>>  getTransactionsByAccountId(
     @AuthenticationPrincipal UserDetails userDetails,
-    @PathVariable Long accountId) {
+    @PathVariable("accountId") Long accountId) {
         String email = userDetails.getUsername(); // 본인 인증단계
-        List<Transaction> tx_list = transactionService.getTransactionsByAccountId(email, accountId);     
-        List<TransactionWithAccountDto> dto_lists = tx_list.stream().map(TransactionWithAccountDto::from).toList();
-        return ResponseEntity.ok(dto_lists);
+        
+          var dtos = transactionService.getTransactionsByAccountId(email, accountId);
+         return ResponseEntity.ok(dtos);
+     
     }
 
 
     //단일  거래내역 조회
     @GetMapping("/{transactionId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TransactionWithAccountDto> getTransactionById(
     @AuthenticationPrincipal UserDetails userDetails,    
-    @PathVariable Long transactionId) {
+    @PathVariable ("transactionId")Long transactionId) {
 
         String email = userDetails.getUsername();
 

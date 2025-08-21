@@ -111,6 +111,7 @@ export default function Transfer() {
         clearKey(storageKey);
       }
       alert(message || '이체 실패');
+    
     } finally {
       setSubmitting(false);
     }
@@ -194,6 +195,15 @@ export default function Transfer() {
             {submitting ? '전송 중...' : '이체하기'}
           </button>
         </form>
+
+        {/* 대시보드로 돌아가기 버튼 */}
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          className="w-full mt-2 text-yellow-700 border border-yellow-400 py-2 rounded-lg font-semibold hover:bg-yellow-100 transition"
+        >
+          마이계좌 홈으로 돌아가기
+        </button>
       </div>
     </div>
   );

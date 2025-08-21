@@ -37,7 +37,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
 
   Optional <Account> findByAccountNumber(String accountNumber);
-    List<Account> findByUserId(Long userId);
+  List<Account> findByUserId(Long userId);
    // List<Account> findByEmail(String email);
    Optional<Account> findByAccountNumberAndBankId(String accountNumber,Long bankId);
 
@@ -63,5 +63,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query("select a from Account a where a.id = :id")
     @QueryHints(@QueryHint(name= "jakarta.persistence.lock.timeout", value="5000"))
     Optional<Account> findByIdForUpdate(@Param("id") Long id);
+    Optional<Account> findByIdAndUserId(Long accountId, Long userId);
 
 }

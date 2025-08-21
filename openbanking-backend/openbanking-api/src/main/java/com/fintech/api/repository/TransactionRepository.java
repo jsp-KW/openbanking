@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.fintech.api.domain.Transaction;
 
@@ -17,6 +19,19 @@ public interface TransactionRepository  extends JpaRepository<Transaction, Long>
     
     
     Optional<Transaction> findByAccountIdAndRequestIdAndType(Long accountId, String requestId, String type);
+   
+
+    @Query("""
+    select t from Transaction t
+    join fetch t.account a
+    where a.id = :accountId
+      and a.user.email = :email
+    order by t.transactionDate desc
+""")
+List<Transaction> findAllByAccountIdWithAccount(
+    @Param("email") String email,
+    @Param("accountId") Long accountId
+);
 
 
 }

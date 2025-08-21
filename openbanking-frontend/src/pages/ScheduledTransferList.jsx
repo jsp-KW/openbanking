@@ -42,17 +42,29 @@ export default function ScheduledTransferList() {
                   <td className="px-4 py-2">{item.amount.toLocaleString()} 원</td>
                   <td className="px-4 py-2">{new Date(item.scheduledAt).toLocaleString()}</td>
                   <td className="px-4 py-2">
-                    {item.executed ? (
-                      <span className="text-green-600 font-semibold">완료</span>
-                    ) : (
-                      <span className="text-gray-500">대기중</span>
-                    )}
+                  {item.executed ? (
+                    <span className="text-green-600 font-bold">✅ 완료</span>
+                  ) : (
+                    <span className="text-yellow-600 font-semibold">⌛ 대기중</span>
+                  )}  
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {/* 대시보드로 돌아가기 버튼 */}
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full text-yellow-700 border border-yellow-400 py-2 rounded-lg font-semibold hover:bg-yellow-100 transition"
+            >
+              ← 대시보드로 돌아가기
+            </button>
+          </div>
+
         </div>
+
+        
       )}
     </div>
   );

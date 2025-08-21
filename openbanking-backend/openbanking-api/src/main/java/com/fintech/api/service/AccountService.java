@@ -93,11 +93,8 @@ public class AccountService {
     if (!valid_accountType.contains(dto.getAccountType())) {
         throw new IllegalArgumentException("유효하지 않은 계좌유형입니다.");
     }
-    // 같은 계좌번호 + 같은 계좌유형이 존재하는지
-    if (accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(),bank.getId(), dto.getAccountType())) {
-        throw new IllegalArgumentException("동일한 유형과 같은 계좌번호를 가진 계좌가 이미 존재합니다.");
-    }
-
+ 
+   
     Account account = new Account();
     account.setUser(user);
     account.setBank(bank);
