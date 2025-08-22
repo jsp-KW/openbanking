@@ -1,4 +1,4 @@
-<img width="1839" height="946" alt="image" src="https://github.com/user-attachments/assets/717c11ba-8650-498f-97b6-5ce21e92a61a" /># 💳 OpenBanking API
+# 💳 OpenBanking API
 
 Spring Boot 기반 웹 오픈뱅킹 시스템입니다.  
 실제 사용자 인증을 기반으로 계좌 개설, 조회, 이체, 거래내역 조회까지 가능한  
