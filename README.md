@@ -147,6 +147,8 @@ redis CLI 로 조회한 사진
 - 인증 방식 sha256 -> rs256 (server 개인키 서명, 검증은 공개키로)
 - Swagger, React 프론트 연동 완료
 
+![Uploading image.png…]()
+
 ### 예정 기능
 - 계좌 비밀번호 검증 로직 추가
 - 거래내역 필터링 (기간/타입별 조회)
