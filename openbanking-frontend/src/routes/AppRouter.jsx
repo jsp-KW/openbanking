@@ -7,7 +7,7 @@ import Signup from '../pages/Signup';
 import Transfer from '../pages/Transfer';
 import Transactions from '../pages/Transactions';
 import ScheduledTransferForm from '../pages/ScheduledTransferForm';
-import ScheduledTransferList from '../pages/ScheduledTransferList';
+import ScheduledTransferList from '../pages/ScheduledTransferList'
 
 function AppRouter() {
   return (
