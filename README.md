@@ -1,4 +1,4 @@
-# 💳 OpenBanking API
+<img width="1839" height="946" alt="image" src="https://github.com/user-attachments/assets/717c11ba-8650-498f-97b6-5ce21e92a61a" /># 💳 OpenBanking API
 
 Spring Boot 기반 웹 오픈뱅킹 시스템입니다.  
 실제 사용자 인증을 기반으로 계좌 개설, 조회, 이체, 거래내역 조회까지 가능한  
@@ -146,8 +146,10 @@ redis CLI 로 조회한 사진
 - 예약이체 목록 조회 api
 - 인증 방식 sha256 -> rs256 (server 개인키 서명, 검증은 공개키로)
 - Swagger, React 프론트 연동 완료
+<img width="1831" height="950" alt="image" src="https://github.com/user-attachments/assets/8a97d4b5-20f3-4e35-85f7-98a0c5bc0cbd" />
 
-![Uploading image.png…]()
+
+
 
 ### 예정 기능
 - 계좌 비밀번호 검증 로직 추가
