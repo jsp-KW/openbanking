@@ -26,7 +26,7 @@ function AppRouter() {
         <Route path="/notifications" element={<Notifications />} /> */}
         <Route path="/scheduled-transfer/new" element={<ScheduledTransferForm />} />
         <Route path="/scheduled-transfers" element={<ScheduledTransferList />} />
-
+          <Route path="/transactions" element={<Transactions />} />
       </Routes>
     </Router>
   );

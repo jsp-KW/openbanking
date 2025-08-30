@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
@@ -40,6 +42,8 @@ public class AccountService {
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     // 계좌 번호 생성 로직!!
     private String makeAccountNumber(Bank bank) {
         String accountNumber;
@@ -67,9 +71,10 @@ public class AccountService {
 
     // Optional & 예외 처리 부분
     // null-safe 
-    @Transactional  // db 쓰기 작업 -> 트랜잭션 보장 명시 
-    // 계좌 생성 (사용자와 연결)
+  
     
+    // 계좌 생성 (사용자와 연결)
+    @Transactional  // db 쓰기 작업 -> 트랜잭션 보장 명시 
     public Account createAccount(AccountRequestDto dto, String email) {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
@@ -101,6 +106,7 @@ public class AccountService {
     account.setAccountNumber(makeAccountNumber(bank));
     account.setBalance(dto.getBalance() != null ? dto.getBalance() : 0L);
     account.setAccountType(dto.getAccountType());
+    account.setAccountPassword(passwordEncoder.encode(dto.getPassword()));
     Account saved = accountRepository.save(account);
 
     notificationService.createNotification(
@@ -158,7 +164,7 @@ public class AccountService {
     // 이체 입출금 서비스 로직 추가구현
     // 낙관락
     @Transactional
-    public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String requestId) {
+    public void transfer(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String password, String requestId ) {
 
 
         // // 출금 중복 방지 예외처리
@@ -190,6 +196,15 @@ public class AccountService {
 
         if (from.getId().equals(to.getId())) {
             throw new IllegalArgumentException("동일한 계좌로는 이체가 불가능합니다.");
+        }
+
+
+        if (from.getAccountPassword() == null) {
+            throw new SecurityException("비밀번호가 설정되지 않은 계좌에서는 이체가 불가능합니다.");
+        }
+
+        if (!passwordEncoder.matches(password, from.getAccountPassword())) {
+            throw new SecurityException("계좌 비밀번호가 일치하지 않습니다.");
         }
 
         Long fromBalance = from.getBalance() != null ? from.getBalance() : 0L;
@@ -271,7 +286,7 @@ public class AccountService {
     // 락 없이 id 파악 -> id 오름차순으로 findByIdForUpdate 함수로 베타락 -> from/to 매핑 -> 잔액처리
 
     @Transactional
-    public void transferWithPessimisticlock(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String requestId)  {
+    public void transferWithPessimisticlock(String email, Long fromBankId, Long toBankId, String fromAccountNumber, String toAccountNumber, Long amount, String password, String requestId)  {
 
 
         if (amount == null || amount <=0)  {throw new IllegalArgumentException("이체 금액이 올바르지 않습니다.");}
@@ -318,6 +333,14 @@ public class AccountService {
 
         if (!from.getUser().getEmail().equals(email)) {
             throw new SecurityException("본인의 계좌에서만 이체가 가능합니다.");
+        }
+
+        if (from.getAccountPassword() == null) {
+            throw new SecurityException("비밀번호가 설정되지 않은 계좌에서는 이체가 불가능합니다.");
+        }
+
+        if (!passwordEncoder.matches(password, from.getAccountPassword())) {
+            throw new SecurityException("계좌 비밀번호가 일치하지 않습니다.");
         }
 
         long fromBalance = from.getBalance() == null? 0L : from.getBalance();

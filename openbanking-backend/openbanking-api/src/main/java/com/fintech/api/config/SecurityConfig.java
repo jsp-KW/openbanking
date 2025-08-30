@@ -65,8 +65,9 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/accounts/my").hasAnyRole("USER", "ADMIN")
             .requestMatchers(HttpMethod.GET, "/api/transactions/account/**").hasAnyRole("USER","ADMIN")
             .requestMatchers(HttpMethod.GET,  "/api/transactions").hasAnyRole("USER","ADMIN") 
-            .requestMatchers(HttpMethod.POST, "/api/transactions/*").hasAnyRole("USER","ADMIN")
-            
+            .requestMatchers(HttpMethod.POST, "/api/transactions").hasAnyRole("USER", "ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/transactions/{transactionId}").hasAnyRole("USER", "ADMIN")
+     
             .anyRequest().authenticated()
         )
         .addFilterBefore(JwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

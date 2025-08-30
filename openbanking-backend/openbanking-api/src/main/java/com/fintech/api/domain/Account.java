@@ -32,6 +32,7 @@ import lombok.Setter;
 @Builder // 빌더 패턴 사용을 가능하게 해서 안정적인 객체 생성하도록
 
 
+// 계좌 비밀번호 추가하기
 public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +42,11 @@ public class Account {
     
     @Column(unique = true)
     private String accountNumber;
+
+    // 계좌 비밀번호
+    @Column(name = "account_password", nullable = false)
+    private String accountPassword;
+    
 
     //accountCreated -> 계좌 생성시간도 추가적으로 고려해보기
     

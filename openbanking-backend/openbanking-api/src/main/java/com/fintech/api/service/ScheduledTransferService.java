@@ -3,7 +3,9 @@ package com.fintech.api.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fintech.api.domain.Account;
@@ -29,6 +31,9 @@ public class ScheduledTransferService {
     private final ScheduledTransferRepository scheduledTransferRepository;
     private final AccountRepository accountRepository;
     private final NotificationService notificationService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      *  예약이체 등록 
@@ -41,7 +46,18 @@ public class ScheduledTransferService {
         System.out.println("출금계좌 확인" + dto.getToAccountNumber());
         Account from = accountRepository.findByAccountNumber(dto.getFromAccountNumber()).orElseThrow(() -> new IllegalArgumentException("출금 계좌 없습니다.")); //출금 계좌 엔티티 객체
 
-        Account to = accountRepository.findByAccountNumber(dto.getToAccountNumber()).orElseThrow(() -> new IllegalArgumentException("입금 계좌 없습니다.")); // 입금 계좌 엔티티 객체
+        if (from.getAccountPassword() == null || !passwordEncoder.matches(dto.getPassword(),from.getAccountPassword())){
+            throw new SecurityException("계좌 비밀번호 불일치");
+        }
+
+        if (!from.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("본인의 계좌에서만 예약이체 등록이 가능합니다.");
+        }
+        // 예약이체 받을 계좌 은행id, 계좌번호
+        Account to = accountRepository.findByAccountNumberAndBankId(
+            dto.getToAccountNumber(),
+            dto.getToBankId()
+        ).orElseThrow(() -> new IllegalArgumentException("입금 계좌(은행 포함) 정보가 유효하지 않습니다."));
 
         // 예약이체 엔티티 초기화
         ScheduledTransfer st = ScheduledTransfer.builder().user(user).fromAccount(from)

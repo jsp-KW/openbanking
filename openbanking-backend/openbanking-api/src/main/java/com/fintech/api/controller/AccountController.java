@@ -139,6 +139,7 @@ public class AccountController {
             requestDto.getFromAccountNumber(),
             requestDto.getToAccountNumber(),
             requestDto.getAmount(),
+            requestDto.getPassword(),
             requestId
         );
         return ResponseEntity.ok(new MessageResponse("이체 완료"));
@@ -159,6 +160,7 @@ public class AccountController {
             requestDto.getFromAccountNumber(),
             requestDto.getToAccountNumber(),
             requestDto.getAmount(),
+             requestDto.getPassword(),
             requestId
         );
         return ResponseEntity.ok(new MessageResponse("이체 완료(pessimistic)"));
