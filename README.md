@@ -146,6 +146,10 @@ redis CLI 로 조회한 사진
 - 예약이체 목록 조회 api
 - 인증 방식 sha256 -> rs256 (server 개인키 서명, 검증은 공개키로)
 - Swagger, React 프론트 연동 완료
+<img width="1831" height="950" alt="image" src="https://github.com/user-attachments/assets/8a97d4b5-20f3-4e35-85f7-98a0c5bc0cbd" />
+
+
+
 
 ### 예정 기능
 - 계좌 비밀번호 검증 로직 추가
