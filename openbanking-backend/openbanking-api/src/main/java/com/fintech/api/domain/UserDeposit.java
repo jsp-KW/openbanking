@@ -37,7 +37,7 @@ public class UserDeposit {
 
     @ManyToOne
     @JoinColumn(name = "product_id")
-    private DepositProduct  product; //FK
+    private DepositProduct product; //FK
 
     @ManyToOne
     @JoinColumn(name ="account_id")

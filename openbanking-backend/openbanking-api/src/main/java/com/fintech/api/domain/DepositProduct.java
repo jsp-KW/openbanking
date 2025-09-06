@@ -28,6 +28,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// 예적금 상품정보 엔티티
+// 이율, 기간 최소금액 등
 public class DepositProduct {
     
     @Id
@@ -45,7 +47,7 @@ public class DepositProduct {
     @Column(nullable = false)
     private int periodMonths;// 예치기간 (개월 단위)
 
-    private Long minAmount; // 최소 가입금액
+    private BigDecimal minAmount; // 최소 가입금액
 
     @Enumerated(EnumType.STRING)
     private DepositType  type; // 정기예금/적금  구분 
@@ -54,6 +56,14 @@ public class DepositProduct {
 
     @Column(length =2000)
     private String description;
+    
+    // 수정 일시
+    private LocalDateTime updatedAt;
+
+    // 이자 계산 방식을 위한 컬럼
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private InterestType interestType = InterestType.SIMPLE; // 기본값: 단리
     
     
     @PrePersist
