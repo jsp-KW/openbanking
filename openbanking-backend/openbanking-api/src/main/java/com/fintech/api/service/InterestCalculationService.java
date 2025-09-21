@@ -69,25 +69,27 @@ public class InterestCalculationService {
      * 실제로는 복리 계산이 매우 복잡하므로 근사치 계산 사용
      */
     private BigDecimal calculateCompoundInterest(BigDecimal principal, BigDecimal annualRate, int days) {
-        // 연이율을 소수로 변환
+        // 연이율을 소수로 변환 100으로 나누기 4-> 0.04
         BigDecimal rate = annualRate.divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
         
-        // 일이율 계산
+        // 일이율 계산 -> 365 로 나눠서, 하루단위로 변경
         BigDecimal dailyRate = rate.divide(BigDecimal.valueOf(365), 8, RoundingMode.HALF_UP);
         
-        // 복리 계산: (1 + 일이율)^일수
+        // 복리 계산: (1 + 일이율)^일수 -> 일이율
         // Math.pow를 사용한 근사 계산 (정확한 계산을 위해서는 더 복잡한 로직 필요)
         double compoundFactor = Math.pow(1 + dailyRate.doubleValue(), days);
-        BigDecimal compoundMultiplier = BigDecimal.valueOf(compoundFactor);
+        BigDecimal compoundMultiplier = BigDecimal.valueOf(compoundFactor); //Math.pow 는 double을 return -> precision 떨어질 수 있어서 BigDecimal로 타입캐스팅
         
-        BigDecimal finalAmount = principal.multiply(compoundMultiplier);
-        BigDecimal interest = finalAmount.subtract(principal);
+        BigDecimal finalAmount = principal.multiply(compoundMultiplier); // 원금에 (1+일이율)^일수 를 곱해주고
+        BigDecimal interest = finalAmount.subtract(principal);// 바로 위의 값에서 원금을 빼줌으로써 이자만 분리함!!
         
-        return interest.setScale(0, RoundingMode.HALF_UP);
+        return interest.setScale(0, RoundingMode.HALF_UP); // 이자만 반환-> 소수점은 반올림 하여 원단위로 맞춤
     }
     
     /**
-     * 월복리 계산 (나중에 추가할 때 사용)
+     * 월복리 계산 -> 연이율을 월이율로 (연 4프로 -> 4/12 해서 0.333프로)
+     * 개월수는 일수 나누기 30 으로 근사 ->30일을 1개월로 치고
+     * 
      */
     private BigDecimal calculateMonthlyCompoundInterest(BigDecimal principal, BigDecimal annualRate, int days) {
         BigDecimal rate = annualRate.divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);

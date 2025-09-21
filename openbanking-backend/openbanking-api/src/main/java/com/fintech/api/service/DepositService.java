@@ -173,7 +173,7 @@ public class DepositService {
     public void processMaturity() {
         LocalDateTime now = LocalDateTime.now();
 
-        //  enum 변경으로 수정
+      
         List<UserDeposit> matured = userDepositRepository.findByStatusAndMaturityDateBefore(
                 DepositStatus.ACTIVE, now
         );
