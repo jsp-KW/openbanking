@@ -1,24 +1,19 @@
 package com.fintech.api.dto;
 
-
 import java.time.LocalDateTime;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+// @AllArgsConstructor, @NoArgsConstructor는 Builder를 사용할 경우 생략 가능하거나 필수는 아닙니다.
 
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Builder // 이 클래스가 빌더 패턴으로 생성될 수 있도록 합니다.
 public class ErrorResponseDto {
+
+    private final String code;
+    private final String message;
     
-    private String code;
-    private String message;
-    
-    @Builder.Default
-    private LocalDateTime timestamp = LocalDateTime.now();
+    @Builder.Default // 빌더를 통해 생성 시, 값을 넣지 않으면 기본값 사용
+    private final LocalDateTime timestamp = LocalDateTime.now();
+
 }
