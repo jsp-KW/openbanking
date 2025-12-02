@@ -42,8 +42,9 @@ public class AccountService {
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    // spring 생성자 주입
+
+    private final PasswordEncoder passwordEncoder;
     // 계좌 번호 생성 로직!!
     private String makeAccountNumber(Bank bank) {
         String accountNumber;
@@ -91,6 +92,12 @@ public class AccountService {
     if (dto.getBalance()!=null && dto.getBalance()<0) {
         throw new IllegalArgumentException("초기 잔액은 음수일 수 없습니다.");
     }
+
+    // 동일 유형 계좌 중복 방지
+    if (accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(), bank.getId(), dto.getAccountType())) {
+        throw new IllegalArgumentException("동일한 유형과 같은 계좌번호를 가진 계좌가 이미 존재합니다.");
+    }
+
 
     //계좌의 유효성 검사-> 이넘타입으로 변경 고려하기
 

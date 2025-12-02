@@ -8,6 +8,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.fintech.api.domain.Account;
 import com.fintech.api.domain.Bank;
@@ -58,8 +61,22 @@ public class AccountServiceTest {
     @Mock // 이 함수가 값을 리턴하다로 미리 세팅해서 가짜처럼 굴리는것
     private UserRepository userRepository;
 
+    @Mock
+    private BankRepository bankRepository;
+         
+    @Mock
+    private TransactionRepository transactionRepository;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+
     @InjectMocks // test 하려는 진짜 클래스를 만들고, 내부 필요한 의존성(@Mocks)를 자동으로 주입
     private AccountService accountService;
+   
 
 
     @Test
@@ -82,12 +99,9 @@ public class AccountServiceTest {
 
         // then
         assertEquals(2, result.size());// 기대한 값 2, 실제값 -> 같아야 테스트 통과, 틀리면 테스트 실패
-        assertEquals("123454", result.get(0).getAccountNumber()); 
+        assertEquals("12345", result.get(0).getAccountNumber()); 
     
     }
-
-    @Mock
-    private NotificationService notificationService;
 
     @Test
     void 특정_계좌삭제 () {
@@ -110,8 +124,7 @@ public class AccountServiceTest {
 
 
 
-    @Mock
-    private TransactionRepository transactionRepository;
+     
     
     // 일반적인 이체가 가능한지 test
     @Test 
@@ -123,10 +136,10 @@ public class AccountServiceTest {
 
 
     
-        Account fromAccount = Account.builder().id(1L).accountNumber("1234").accountType("예적금").bank(fromBank).balance(1000L).user(user).build();
+        Account fromAccount = Account.builder().id(1L).accountNumber("1234").accountType("예적금").bank(fromBank).balance(1000L).user(user).accountPassword("encodedPw").build();
 
         User otherUser = User.builder().id(2L).email("other@example.com").build();
-        Account toAccount = Account.builder().id(2L).accountNumber("456").accountType("예적금").balance(1000L).bank(toBank).user(otherUser).build();
+        Account toAccount = Account.builder().id(2L).accountNumber("456").accountType("예적금").balance(1000L).bank(toBank).user(otherUser).accountPassword("encodedPw").build();
     
         when(accountRepository.findByAccountNumberAndBankId("1234", 1L)).thenReturn(
         (Optional.of(fromAccount)));
@@ -137,8 +150,9 @@ public class AccountServiceTest {
         (Optional.of(toAccount))
         );
         
-        accountService.transfer(email, 1L, 2L, "1234", "456", 500L);
-        
+        when (passwordEncoder.matches("1234", "encodedPw")).thenReturn(true);
+
+        accountService.transfer(email,1L,2L,"1234","456", 500L,"1234", "req-001");
         assertEquals(500L, fromAccount.getBalance());
         assertEquals(1500L, toAccount.getBalance());
 
@@ -164,7 +178,7 @@ public class AccountServiceTest {
         when(accountRepository.findByAccountNumberAndBankId("5678", 2L)).thenReturn(Optional.of(toAccount));
 
         assertThrows(IllegalArgumentException.class, () -> {
-            accountService.transfer(email, 1L, 2L, "1234", "5678", 1000L);  // 1000원 이체 시도
+            accountService.transfer(email, 1L, 2L, "1234", "5678", 1000L, "1234", "req-002");  // 1000원 이체 시도
         });
 
     }
@@ -184,7 +198,7 @@ public class AccountServiceTest {
         when(accountRepository.findByAccountNumberAndBankId("9999", 99L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, ()-> {
-            accountService.transfer(email, 1L, 9L, "1234", "9999", 1000L);
+            accountService.transfer(email, 1L, 99L, "1234", "9999", 1000L, "1234", "req-003");
         });
     }
 
@@ -200,7 +214,7 @@ public class AccountServiceTest {
         when(accountRepository.findByAccountNumberAndBankId("1234", 1L)).thenReturn(Optional.of(account));
 
        Exception exception= assertThrows(IllegalArgumentException.class, () -> {
-            accountService.transfer(email, 1L, 1L, "1234", "1234", 1000L);
+            accountService.transfer(email, 1L, 1L, "1234", "1234", 1000L,"1234","req-004");
         });
 
         assertEquals("동일한 계좌로는 이체가 불가능합니다.", exception.getMessage());
@@ -212,13 +226,13 @@ public class AccountServiceTest {
     void 타인의계좌_삭제_실패() {
         String email = "user@example.com";
         User user = User.builder().id(1L).email(email).build();
-
         User otherUser = User.builder().id(2L).email("other@example.com").build();
+
         Account account = Account.builder().id(1L).accountNumber("9999").user(otherUser).build();
 
         when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
 
-        Exception ex = assertThrows(IllegalArgumentException.class, () -> {
+        Exception ex = assertThrows(AccessDeniedException.class, () -> {
             accountService.deleteAccountWithAuth(1L, email);
         });
 
@@ -251,8 +265,7 @@ public class AccountServiceTest {
     }
 
 
-    @Mock
-    private BankRepository bankRepository;
+
 
     @Test
     void 계좌중복없이_랜덤으로_생성이_잘되는지() {
@@ -294,7 +307,9 @@ public class AccountServiceTest {
         dto.setAccountType("예적금");
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
         when(bankRepository.findById(1L)).thenReturn(Optional.of(bank));
+        
         when(accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(), bank.getId(), dto.getAccountType()))
             .thenReturn(true); // 중복 계좌가 이미 존재한다고 가정하고
 
