@@ -1,6 +1,7 @@
 package com.fintech.api.controller;
 
 import com.fintech.api.config.JwtTokenProvider;
+import com.fintech.api.domain.Role;
 import com.fintech.api.domain.User; 
 import com.fintech.api.dto.LoginRequest;
 import com.fintech.api.dto.LoginResponse;
@@ -62,11 +63,18 @@ public class AuthController {
                 .email(request.getEmail())
                 .password(request.getPassword()) // createUser() 안에서 암호화 
                 .phone(request.getPhone())
-                .role(request.getRole())
+                .role(Role.USER)
                 .build();
 
         userService.createUser(user);
         return ResponseEntity.ok("회원가입 성공!");
+    }
+
+
+    @GetMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestParam String email) {
+        boolean exists = userService.isEmailExists(email);
+        return ResponseEntity.ok(exists); // true = 이미 존재, false = 사용 가능
     }
 
 

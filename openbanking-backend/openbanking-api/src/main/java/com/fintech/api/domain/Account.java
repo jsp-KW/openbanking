@@ -10,6 +10,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Column;
 // alt + shift  + o
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -50,8 +52,9 @@ public class Account {
     
 
     //accountCreated -> 계좌 생성시간도 추가적으로 고려해보기
-    
-    private String accountType; //입출금 적금 등 
+    @Enumerated(EnumType.STRING)
+    @Column(name="account_type", nullable = false)
+    private AccountType accountType; //입출금 적금 등 
 
     @Version //목적 : 동시에 두 건이 같은 계좌를 접근하는 경우 중복 차감 방지(충돌 방지를 위해)
     private Long version;

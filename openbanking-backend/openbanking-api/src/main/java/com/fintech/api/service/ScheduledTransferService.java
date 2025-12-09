@@ -9,17 +9,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.fintech.api.domain.Account;
-import com.fintech.api.domain.NotificationType;
+
 import com.fintech.api.domain.ScheduledTransfer;
-import com.fintech.api.domain.Transaction;
+
 import com.fintech.api.domain.User;
-import com.fintech.api.dto.CreateNotificationRequestDto;
+
 import com.fintech.api.dto.CreateScheduledTransferRequestDto;
 import com.fintech.api.dto.ScheduledTransferListResponseDto;
 import com.fintech.api.dto.ScheduledTransferResponseDto;
 import com.fintech.api.repository.AccountRepository;
 import com.fintech.api.repository.ScheduledTransferRepository;
-import com.fintech.api.repository.TransactionRepository;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +27,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ScheduledTransferService {
 
-    private final TransactionRepository transactionRepository;
-    private final ScheduledTransferRepository scheduledTransferRepository;
+     private final ScheduledTransferRepository scheduledTransferRepository;
     private final AccountRepository accountRepository;
-    private final NotificationService notificationService;
+    
+    // 퍼싸드 (Processor) 주입
+
+    private final ScheduledTransferProcessor scheduledTransferProcessor;
+
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -76,62 +79,81 @@ public class ScheduledTransferService {
      *  예약이체 배치 처리
      *  추후에 실시간 대비를 위해 Kafka 도입 해보기
      */
-    @Scheduled(fixedRate = 60000)
-    @Transactional
-    public void executeScheduledTransfers() {
-        List<ScheduledTransfer> scheduleds = scheduledTransferRepository.findByStatusAndScheduledAtBefore("대기", LocalDateTime.now());
 
-        for (ScheduledTransfer s : scheduleds) {
-          try {
-            processTransfer(s);
-            s.setStatus("완료");
-            scheduledTransferRepository.save(s);
+    // 12/2 문제점 인식 부분
+    // @Scheduled + @Transactional  환장의 조합 -> db 커넥션 타임아웃(남는 커넥션 x 일반 사용자 로그인 못함 -> 서비스 장애)
+    // @Scheduled(fixedRate = 60000)
+    //  @Transactional
+    // public void executeScheduledTransfers() {
+    //     List<ScheduledTransfer> scheduleds = scheduledTransferRepository.findByStatusAndScheduledAtBefore("대기", LocalDateTime.now());
 
-            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(s.getUser().getId())
-                .message("예약 이체 완료: " + s.getAmount() + "원").type(NotificationType.SCHEDULED_TRANSFER).build());
-          }
+    //     for (ScheduledTransfer s : scheduleds) {
+    //       try {
+    //         processTransfer(s);
+    //         s.setStatus("완료");
+    //         scheduledTransferRepository.save(s);
+
+    //         notificationService.createNotification(CreateNotificationRequestDto.builder().userId(s.getUser().getId())
+    //             .message("예약 이체 완료: " + s.getAmount() + "원").type(NotificationType.SCHEDULED_TRANSFER).build());
+    //       }
           
-          catch (Exception e) {
-            s.setStatus("실패");
-            scheduledTransferRepository.save(s);
-            notificationService.createNotification(CreateNotificationRequestDto.builder().userId(s.getUser().getId()).message("예약이체 실패: " + e.getMessage())
-                .type(NotificationType.INSUFFICIENT_BALANCE).build()
-            );
-          }
+    //       catch (Exception e) {
+    //         s.setStatus("실패");
+    //         scheduledTransferRepository.save(s);
+    //         notificationService.createNotification(CreateNotificationRequestDto.builder().userId(s.getUser().getId()).message("예약이체 실패: " + e.getMessage())
+    //             .type(NotificationType.INSUFFICIENT_BALANCE).build()
+    //         );
+    //       }
+    //     }
+    // }
+
+    @Scheduled(fixedRate = 60000)
+    public void executeScheduledTransfers() {
+        // 1. 대기중인 예약 이체 조회 (트랜잭션 없이 읽기만 수행 -> 커넥션 점유 시간 매우 짧음)
+        // 예약이체 데이터가 많은 경우, 페이징 처리가 필수, 일단 list
+
+        List <ScheduledTransfer> scheduleds = scheduledTransferRepository.findByStatusAndScheduledAtBefore("대기", LocalDateTime.now());
+        
+        // 2. loop를 돌면서 Processor 에게 처리하라고 "지시"
+        for (ScheduledTransfer s : scheduleds) {
+            scheduledTransferProcessor.process(s); // 트랜잭션 열리고 닫히고 반복
         }
     }
-
     /**
      *  실제 잔액 이동 처리
      *  예약 이체후 잔액 변동을 적용하는 함수
      */
-    private void processTransfer(ScheduledTransfer st) {
-        Account from = st.getFromAccount();
-        Account to = st.getToAccount();
-        Long amount = st.getAmount();
 
-        if (from.getBalance() < amount) throw new IllegalArgumentException("잔액 부족");
+    // 동시성 문제, 데이터 꼬임 문제
+    // 이걸 Processor  대신하도록 대체함
+    // 
+    // private void processTransfer(ScheduledTransfer st) {
+    //     Account from = st.getFromAccount();
+    //     Account to = st.getToAccount();
+    //     Long amount = st.getAmount();
 
-        from.setBalance(from.getBalance() - amount);
-        to.setBalance(to.getBalance() + amount);
+    //     if (from.getBalance() < amount) throw new IllegalArgumentException("잔액 부족");
+
+    //     from.setBalance(from.getBalance() - amount);
+    //     to.setBalance(to.getBalance() + amount);
 
 
-        // 멱등키 백엔드기반 자동으로 생성
-        String baseId = "SCHEDULED-" + st.getId();
-        String requestIdOut = baseId + "-OUT";
-        String requestIdIn = baseId + "-IN";
+    //     // 멱등키 백엔드기반 자동으로 생성
+    //     String baseId = "SCHEDULED-" + st.getId();
+    //     String requestIdOut = baseId + "-OUT";
+    //     String requestIdIn = baseId + "-IN";
 
-        // 예약이체 성공시 트랜잭션 기록 남기기 위해 추가하기!!
+    //     // 예약이체 성공시 트랜잭션 기록 남기기 위해 추가하기!!
 
-        transactionRepository.save(Transaction.builder().account(from).amount(-amount).type("출금")
-        .description("예약이체 출금: " + to.getAccountNumber()).balanceAfter(from.getBalance()).requestId(requestIdOut).build()
-        );
+    //     transactionRepository.save(Transaction.builder().account(from).amount(-amount).type("출금")
+    //     .description("예약이체 출금: " + to.getAccountNumber()).balanceAfter(from.getBalance()).requestId(requestIdOut).build()
+    //     );
 
         
-        transactionRepository.save(Transaction.builder().account(to).amount(amount).type("입금")
-        .description("예약이체 입금: " +from.getAccountNumber()).balanceAfter(to.getBalance()).requestId(requestIdIn).build()
-        );
-    }
+    //     transactionRepository.save(Transaction.builder().account(to).amount(amount).type("입금")
+    //     .description("예약이체 입금: " +from.getAccountNumber()).balanceAfter(to.getBalance()).requestId(requestIdIn).build()
+    //     );
+    // }
 
       /*
      *  나의 예약이체 내역 조회하는 함수

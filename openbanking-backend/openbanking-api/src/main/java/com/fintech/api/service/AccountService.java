@@ -3,9 +3,7 @@ package com.fintech.api.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.fintech.api.domain.Account;
+import com.fintech.api.domain.AccountType;
 import com.fintech.api.domain.Bank;
 import com.fintech.api.domain.NotificationType;
 import com.fintech.api.domain.Transaction;
@@ -77,6 +76,7 @@ public class AccountService {
     // 계좌 생성 (사용자와 연결)
     @Transactional  // db 쓰기 작업 -> 트랜잭션 보장 명시 
     public Account createAccount(AccountRequestDto dto, String email) {
+    AccountType type = AccountType.fromLabel(dto.getAccountType());
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
@@ -94,26 +94,25 @@ public class AccountService {
     }
 
     // 동일 유형 계좌 중복 방지
-    if (accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(), bank.getId(), dto.getAccountType())) {
+    if (accountRepository.existsByUserIdAndBankIdAndAccountType(user.getId(), bank.getId(), type)) {
         throw new IllegalArgumentException("동일한 유형과 같은 계좌번호를 가진 계좌가 이미 존재합니다.");
     }
 
 
     //계좌의 유효성 검사-> 이넘타입으로 변경 고려하기
 
-    List<String> valid_accountType = List.of("예적금","입출금","청약");
-    if (!valid_accountType.contains(dto.getAccountType())) {
-        throw new IllegalArgumentException("유효하지 않은 계좌유형입니다.");
-    }
- 
-   
+    // List<String> valid_accountType = List.of("예적금","입출금","청약");
+    // if (!valid_accountType.contains(dto.getAccountType())) {
+    //     throw new IllegalArgumentException("유효하지 않은 계좌유형입니다.");
+    // }
+
     Account account = new Account();
     account.setUser(user);
     account.setBank(bank);
     account.setAccountNumber(makeAccountNumber(bank));
     account.setBalance(dto.getBalance() != null ? dto.getBalance() : 0L);
-    account.setAccountType(dto.getAccountType());
     account.setAccountPassword(passwordEncoder.encode(dto.getPassword()));
+    account.setAccountType(type);
     Account saved = accountRepository.save(account);
 
     notificationService.createNotification(
@@ -426,6 +425,53 @@ public class AccountService {
         }
       
 
+    }
+
+    // 스케줄러가 사용하는 비밀번호 검사 X이 비관적 락을 사용한 이체함수
+    @Transactional
+    public void transferForSystem (Long fromAccountId, Long toAccountId, Long amount, String requestId) {
+
+        // 순서를 부여하여 데드락 방지 (작은 ID-> 큰 ID)
+        // 시나리오 100 -> 10  이체
+        // fromAccountId =100 , toAccountId =10
+
+        // A->B 이체시 A락 ->B락
+        // B->A 이체시 B락 ->A락
+
+        // firstId = 10 , secondId = 100
+        Long firstId = Math.min (fromAccountId, toAccountId); // 최소를 첫번째  ,
+        Long secondId = Math.max (fromAccountId, toAccountId); // 최대를 두번째
+        
+        // LOCK 획득
+        // 정렬시, 작은 ID 값을 가진 계좌가 먼저 비관락 획득
+        
+        Account first = accountRepository.findByIdForUpdate(firstId).orElseThrow(()-> new IllegalArgumentException("계좌 오류")); // 10 번 계좌 잠구고, first 변수 저장
+        Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(()-> new IllegalArgumentException("계좌 오류")); // 100번 계좌 잠구고, second 변수 저장
+
+       // 비즈니스 의미 매칭
+        // first가 from , second 가 to 인지
+        // first =출금 이게 항상 성립하는건 아니기때문
+        Account from = first.getId().equals(fromAccountId)? first:second;
+        Account to = first.getId().equals (toAccountId)? first : second;
+
+
+        if (from.getBalance() < amount) {
+            throw new IllegalArgumentException("잔액 부족");
+        }
+
+        from.setBalance (from.getBalance() - amount);
+        to.setBalance (to.getBalance()+ amount);
+
+
+        transactionRepository.save(Transaction.builder().account(from).amount(-amount).type("예약출금").balanceAfter(from.getBalance())
+        .description("예약이체: " + to.getAccountNumber()).requestId(requestId+ "-OUT").build());
+        
+        
+        transactionRepository.save(Transaction.builder().account(to).amount(+amount).type("예약입금").balanceAfter(to.getBalance())
+        .description("예약이체: " + from.getAccountNumber()).requestId(requestId+ "-IN").build());
+    
+
+        
     }
 
 }

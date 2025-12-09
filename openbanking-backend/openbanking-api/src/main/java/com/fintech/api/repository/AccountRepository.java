@@ -27,6 +27,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 
 import com.fintech.api.domain.Account;
+import com.fintech.api.domain.AccountType;
 import com.fintech.api.domain.User;
 
 import org.springframework.data.repository.query.Param;
@@ -43,7 +44,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
    boolean existsByAccountNumber(String accountNumber);
    int countByuserId(Long id);
-   boolean existsByUserIdAndBankIdAndAccountType(Long id, Long id2, String accountType);
+   boolean existsByUserIdAndBankIdAndAccountType(Long id, Long id2, AccountType accountType);
 
    // 비관적 쓰기락을 위한
    // 비관적 락은 Shared Lock(읽기 잠금), Exclusive Lock(쓰기 잠금)이 있음

@@ -32,7 +32,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // redisTemplate injection
     private final RedisTemplate<String, String> redisTemplate;
 
-    
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        return path.equals("/api/auth/login") ||
+               path.equals("/api/auth/signup") ||
+               path.equals("/api/auth/check-email");
+    }
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, 

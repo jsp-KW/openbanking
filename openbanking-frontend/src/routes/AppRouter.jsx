@@ -8,6 +8,9 @@ import Transfer from '../pages/Transfer';
 import Transactions from '../pages/Transactions';
 import ScheduledTransferForm from '../pages/ScheduledTransferForm';
 import ScheduledTransferList from '../pages/ScheduledTransferList'
+import DepositProducts from "../pages/DepositProducts";
+import DepositDetail from "../pages/DepositDetail";
+
 
 function AppRouter() {
   return (
@@ -17,6 +20,9 @@ function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/deposits" element={<DepositProducts />} />
+        <Route path="/deposits/:productId" element={<DepositDetail />} />
+        <Route path="/deposits/:productId/subscribe" element={<div>구현 예정</div>} />
 
         <Route path="/create-account" element={<CreateAccount />} />
         <Route path="/transfer" element={<Transfer />} />

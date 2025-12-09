@@ -2,20 +2,27 @@ import axios from 'axios';
 
 const instance = axios.create({
   baseURL: 'http://localhost:8080/api',
-  withCredentials: true, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
+
+// ⛔ 토큰 제외 경로(여기 매우 중요함)
+const excludedPaths = [
+  '/auth/login',
+  '/auth/signup',
+  '/auth/check-email',
+  '/auth/refresh',
+];
 
 instance.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem('jwtToken');
 
-    const excludedPaths = ['/auth/login', '/auth/refresh'];
-    const isExcluded = excludedPaths.some(path => config.url?.includes(path));
+    const isExcluded = excludedPaths.some((path) =>
+      config.url?.includes(path)
+    );
 
-    if (!isExcluded && accessToken && !config.headers['Authorization']) {
+    if (!isExcluded && accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
@@ -29,19 +36,16 @@ instance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    // 🛑 변경: 401일 때만 refresh 시도
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) throw new Error(' refreshToken 없음');
+        if (!refreshToken) throw new Error('RefreshToken 없음');
 
-        const refreshInstance = axios.create({
-          baseURL: 'http://localhost:8080/api',
-        });
-
-        const res = await refreshInstance.post(
-          '/auth/refresh',
+        const res = await axios.post(
+          'http://localhost:8080/api/auth/refresh',
           {},
           {
             headers: {
@@ -50,23 +54,19 @@ instance.interceptors.response.use(
           }
         );
 
-        const newAccessToken = res.data.accessToken || res.data.token;
+        const newAccessToken = res.data.accessToken;
         const newRefreshToken = res.data.refreshToken;
 
-        if (!newAccessToken) throw new Error(' 새 accessToken 없음');
-
-        localStorage.setItem('jwtToken', newAccessToken);
-        if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
+        if (newAccessToken) {
+          localStorage.setItem('jwtToken', newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
+        if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
 
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return instance(originalRequest);
       } catch (refreshError) {
-        console.error('[axios] 토큰 재발급 실패:', refreshError);
-        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('refreshToken');
+        console.error('refresh 실패 → 강제 로그아웃');
+        localStorage.clear();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
